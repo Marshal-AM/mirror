@@ -67,3 +67,8 @@ npm run verify:coston2 -w contracts
 ```
 
 See [docs/phaseImplementation.md](docs/phaseImplementation.md), [docs/KNOWN-LIMITATIONS.md](docs/KNOWN-LIMITATIONS.md), and [docs/SUBMISSION.md](docs/SUBMISSION.md) (PRD §12 mapping).
+
+## Hosted deploy
+
+- Web app: [docs/VERCEL.md](docs/VERCEL.md) (Root Directory `frontend`)
+- Matching engine + XRPL monitor: [docs/CLOUD-RUN.md](docs/CLOUD-RUN.md)
