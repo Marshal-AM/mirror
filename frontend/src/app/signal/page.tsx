@@ -87,9 +87,15 @@ export default function SignalPage() {
         try {
           fill = JSON.parse(raw) as FillBody;
         } catch {
-          throw new Error(`Fill status HTTP ${fillRes.status}: ${raw.slice(0, 160)}`);
+          setStatus(`On-chain ${tx}. Status ${fillRes.status}, retrying ${i + 1}/45…`);
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
         }
-        if (!fill.ok) throw new Error(fill.error || "execute-match failed");
+        if (!fill.ok) {
+          setStatus(`On-chain ${tx}. ${fill.error || "fill status error"}, retrying…`);
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
         if (!fill.pending && (fill.fills ?? 0) > 0) break;
         setStatus(`On-chain ${tx}. Fill worker attempt ${i + 1}/45…`);
         await new Promise((r) => setTimeout(r, 2000));
