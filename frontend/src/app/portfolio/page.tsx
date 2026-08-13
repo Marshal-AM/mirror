@@ -2,10 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatUnits } from "viem";
+import { formatUnits, type PublicClient } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { config, STRATEGY_LABELS } from "@/lib/config";
 import { registryAbi, vaultAbi, leaderboardAbi, vaultEventsAbi } from "@/lib/abis";
+
+/** Coston2 public RPC: eth_getLogs max span is 30 blocks inclusive. */
+const RPC_LOG_BLOCK_LIMIT = 30n;
+/** ~3 FTSO epochs (~90s each, ~50 blocks) for settle-based P&L. */
+const PNL_LOOKBACK_BLOCKS = 150n;
 
 type HealthBadge = "Healthy" | "Drift Detected" | "Liquidation Risk";
 
@@ -26,6 +31,32 @@ function plainLanguageSummary(strategy: string, pnl: number, score: number): str
   const dir =
     pnl > 0 ? "ahead on epoch P&L" : pnl < 0 ? "behind on epoch P&L" : "flat on epoch P&L";
   return `${strategy} lead — ${dir}; AI score ${score}/100 (classification-level only).`;
+}
+
+async function getSettledLogsChunked(
+  client: PublicClient,
+  follower: `0x${string}`,
+  fromBlock: bigint,
+  toBlock: bigint,
+) {
+  const logs: Awaited<ReturnType<typeof client.getContractEvents>> = [];
+  let to = toBlock;
+  while (to >= fromBlock) {
+    const spanStart = to + 1n > RPC_LOG_BLOCK_LIMIT ? to + 1n - RPC_LOG_BLOCK_LIMIT : 0n;
+    const from = spanStart < fromBlock ? fromBlock : spanStart;
+    const chunk = await client.getContractEvents({
+      address: config.vault,
+      abi: vaultEventsAbi,
+      eventName: "SettledFromProof",
+      args: { follower },
+      fromBlock: from,
+      toBlock: to,
+    });
+    logs.push(...chunk);
+    if (from === fromBlock) break;
+    to = from - 1n;
+  }
+  return logs;
 }
 
 export default function PortfolioPage() {
@@ -73,39 +104,19 @@ export default function PortfolioPage() {
           args: [address],
         })) as `0x${string}`[];
 
-        const fromBlock = block > 50_000n ? block - 50_000n : 0n;
-        const depositLogs = await client.getContractEvents({
-          address: config.vault,
-          abi: vaultEventsAbi,
-          eventName: "Deposited",
-          args: { follower: address },
-          fromBlock,
-          toBlock: block,
-        });
-        const settleLogs = await client.getContractEvents({
-          address: config.vault,
-          abi: vaultEventsAbi,
-          eventName: "SettledFromProof",
-          args: { follower: address },
-          fromBlock,
-          toBlock: block,
-        });
-
-        const depositedByLead = new Map<string, bigint>();
-        for (const log of depositLogs) {
-          const leadAddr = log.args.lead;
-          const amount = log.args.amount;
-          if (!leadAddr || amount === undefined) continue;
-          const k = leadAddr.toLowerCase();
-          depositedByLead.set(k, (depositedByLead.get(k) ?? 0n) + amount);
-        }
+        const fromBlock = block > PNL_LOOKBACK_BLOCKS ? block - PNL_LOOKBACK_BLOCKS : 0n;
         const settleByLead = new Map<string, bigint>();
-        for (const log of settleLogs) {
-          const leadAddr = log.args.lead;
-          const delta = log.args.delta;
-          if (!leadAddr || delta === undefined) continue;
-          const k = leadAddr.toLowerCase();
-          settleByLead.set(k, (settleByLead.get(k) ?? 0n) + delta);
+        try {
+          const settleLogs = await getSettledLogsChunked(client, address, fromBlock, block);
+          for (const log of settleLogs) {
+            const leadAddr = log.args.lead;
+            const delta = log.args.delta;
+            if (!leadAddr || delta === undefined) continue;
+            const k = leadAddr.toLowerCase();
+            settleByLead.set(k, (settleByLead.get(k) ?? 0n) + delta);
+          }
+        } catch {
+          /* public RPC log window is optional; balances still load */
         }
 
         const rows: Position[] = [];
@@ -136,11 +147,8 @@ export default function PortfolioPage() {
           });
           const strategy = STRATEGY_LABELS[Number(leadInfo.strategyType)] ?? "unknown";
           const score = Number(scoreRec.score);
-          const deposited = depositedByLead.get(lead.toLowerCase()) ?? 0n;
           const settled = settleByLead.get(lead.toLowerCase()) ?? 0n;
-          // Epoch P&L ≈ FDC-settled deltas; fallback balance − deposits when no settle logs.
-          const pnlWei = settled !== 0n ? settled : balance - deposited;
-          const epochPnlFxrp = Number(formatUnits(pnlWei, FXRP_DECIMALS));
+          const epochPnlFxrp = Number(formatUnits(settled, FXRP_DECIMALS));
           rows.push({
             lead,
             balance,
@@ -163,8 +171,9 @@ export default function PortfolioPage() {
     <section className="section">
       <h2>Portfolio</h2>
       <p>
-        Per-lead vault balances from live Coston2. Epoch P&L from FDC settle / deposit logs.
-        Trade summaries are classification-level only (PRD §6.2/§7).
+        Per-lead vault balances from live Coston2. Epoch P&L from recent FDC settle logs
+        (public RPC allows 30 blocks per query). Trade summaries are classification-level
+        only (PRD §6.2/§7).
       </p>
       {epochLabel && <p className="muted">{epochLabel}</p>}
       {!isConnected && <p className="muted">Connect to load positions.</p>}
