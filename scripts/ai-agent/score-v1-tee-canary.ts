@@ -93,6 +93,21 @@ function decodeData(data: unknown): any {
   }
 }
 
+/** FCC indexes extensionId as a small uint; instruction ids are 32-byte hashes. */
+function instructionIdFromReceipt(receipt: { logs: readonly { address: string; topics: readonly Hex[]; data: Hex }[] }): Hex | null {
+  for (const l of receipt.logs) {
+    if (l.address.toLowerCase() !== DIAMOND.toLowerCase()) continue;
+    for (const t of l.topics.slice(1)) {
+      if (BigInt(t) > 1_000_000n) return t;
+    }
+    if (l.data.length >= 66) {
+      const word = `0x${l.data.slice(2, 66)}` as Hex;
+      if (BigInt(word) > 1_000_000n) return word;
+    }
+  }
+  return null;
+}
+
 async function sendAndWait(
   label: string,
   hash: Hex,
@@ -102,11 +117,8 @@ async function sendAndWait(
   console.log(`${label} tx ${hash}`);
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") throw new Error(`${label} reverted`);
-  const diamondLog = receipt.logs.find(
-    (l) => l.address.toLowerCase() === DIAMOND.toLowerCase() && l.topics[1],
-  );
-  if (!diamondLog?.topics[1]) throw new Error(`${label}: no TeeInstructionsSent`);
-  const instructionId = diamondLog.topics[1] as Hex;
+  const instructionId = instructionIdFromReceipt(receipt);
+  if (!instructionId) throw new Error(`${label}: no instruction id in diamond logs`);
   console.log(`${label} instruction ${instructionId}`);
   const tee = await fetchTeeResult(proxyUrl, instructionId);
   const decoded = decodeData(tee.data);
@@ -139,7 +151,7 @@ async function main() {
     functionName: "sendSayHello",
     args: [jsonToHex({ name: "Mirror" })],
     value: FEE,
-    gas: 1_500_000n,
+    gas: 3_000_000n,
   });
   const hello = await sendAndWait("SAY_HELLO", helloHash as Hex, publicClient, proxyUrl);
   const greetingNumber = hello?.greetingNumber ?? hello?.GreetingNumber;
@@ -154,7 +166,7 @@ async function main() {
     functionName: "sendScoreV1",
     args: [jsonToHex({ lead, fixture: "momentum" })],
     value: FEE,
-    gas: 1_500_000n,
+    gas: 3_000_000n,
   });
   const score = await sendAndWait("SCORE_V1", scoreHash as Hex, publicClient, proxyUrl);
   if (typeof score?.score !== "number") {

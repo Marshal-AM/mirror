@@ -121,9 +121,22 @@ async function main() {
     if (processed.has(txHash.toLowerCase())) return;
     const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
     if (receipt.status !== "success") throw new Error(`signal tx reverted ${txHash}`);
-    const diamondLog = receipt.logs.find((l) => l.address.toLowerCase() === DIAMOND.toLowerCase() && l.topics[1]);
-    if (!diamondLog?.topics[1]) throw new Error(`no TeeInstructionsSent on ${txHash}`);
-    const instructionId = diamondLog.topics[1] as Hex;
+    let instructionId: Hex | undefined;
+    for (const l of receipt.logs) {
+      if (l.address.toLowerCase() !== DIAMOND.toLowerCase()) continue;
+      for (const t of l.topics.slice(1)) {
+        if (BigInt(t) > 1_000_000n) {
+          instructionId = t;
+          break;
+        }
+      }
+      if (!instructionId && l.data.length >= 66) {
+        const word = `0x${l.data.slice(2, 66)}` as Hex;
+        if (BigInt(word) > 1_000_000n) instructionId = word;
+      }
+      if (instructionId) break;
+    }
+    if (!instructionId) throw new Error(`no TeeInstructionsSent on ${txHash}`);
     const lead = getAddress(receipt.from);
     console.log(`instruction ${instructionId} from lead ${lead}`);
 

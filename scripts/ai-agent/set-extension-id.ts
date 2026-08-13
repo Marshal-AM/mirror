@@ -63,7 +63,7 @@ async function main() {
     address: sender,
     abi: ABI,
     functionName: "setExtensionId",
-    gas: 2_000_000n,
+    gas: 8_000_000n,
   });
   console.log(`setExtensionId tx ${hash}`);
   const receipt = await publicClient.waitForTransactionReceipt({ hash: hash as Hex });

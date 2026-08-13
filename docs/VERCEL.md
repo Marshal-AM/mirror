@@ -75,6 +75,15 @@ NEXT_PUBLIC_MIRROR_ALERTS_URL=/api/alerts
 NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY=<paste from frontend/.env.local>
 ```
 
+For **Encrypt & submit → vault fill** (server-only, not `NEXT_PUBLIC_`):
+
+```
+MATCHING_TEE_PROXY_URL=<matching EXT_PROXY_URL from fce-matching-engine/.env on the VM — not tunnel-ai>
+EXECUTE_MATCH_PRIVATE_KEY=<same as DEPLOYER_PRIVATE_KEY>
+```
+
+Hobby Vercel functions may time out before the TEE returns; local `npm run dev` is the reliable fill path. If those vars are unset, the signal still lands on-chain and the UI reports fill skipped.
+
 After Cloud Run is up ([docs/CLOUD-RUN.md](./CLOUD-RUN.md)), set:
 
 ```
@@ -108,10 +117,10 @@ You still need **MetaMask + faucet funds**. You do **not** need `npm run dev`, m
 4. **Lead:** `/lead/onboard` → Register  
 5. **Follower:** `/follower/onboard` → lead address `0x03182be182be76F11D1d136574190708844aE079`, deposit e.g. `10` FXRP (6 decimals — type `10`, not a tiny fraction)  
 6. `/portfolio` — balance + AI scores (canary already published scores)  
-7. **Lead:** `/signal` — encrypt + submit on-chain  
-8. **Follower:** `/withdraw` — request withdrawal  
+7. **Lead:** `/signal` — encrypt, submit, and fill follower vault FXRP→USDT0  
+8. **Follower:** `/portfolio` then `/withdraw`  
 
-Signal tx going on-chain is expected. Full TEE decrypt → swap fill only happens if the matching-engine FCE is registered on Coston2 FCC (not Vercel).
+Requires matching TEE + `MATCHING_TEE_PROXY_URL` (current matching tunnel, not `tunnel-ai`) and `EXECUTE_MATCH_PRIVATE_KEY`. Followers must already have vault FXRP.
 
 ---
 

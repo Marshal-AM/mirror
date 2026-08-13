@@ -96,6 +96,36 @@ export const registryAbi = [
     inputs: [{ name: "follower", type: "address" }],
     outputs: [{ type: "address[]" }],
   },
+  {
+    type: "function",
+    name: "getFollowAllocation",
+    stateMutability: "view",
+    inputs: [
+      { name: "follower", type: "address" },
+      { name: "lead", type: "address" },
+    ],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "lead", type: "address" },
+          { name: "allocation", type: "uint256" },
+          { name: "active", type: "bool" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "event",
+    name: "LeadRegistered",
+    inputs: [
+      { indexed: true, name: "wallet", type: "address" },
+      { indexed: false, name: "strategyType", type: "uint8" },
+      { indexed: false, name: "feeRateBps", type: "uint16" },
+      { indexed: false, name: "minAllocation", type: "uint256" },
+      { indexed: false, name: "teePublicKeyHash", type: "bytes32" },
+    ],
+  },
 ] as const;
 
 export const vaultEventsAbi = [

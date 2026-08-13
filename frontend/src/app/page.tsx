@@ -3,21 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePublicClient } from "wagmi";
-import { config, STRATEGY_LABELS, RISK_LABELS } from "@/lib/config";
-import { leaderboardAbi, registryAbi } from "@/lib/abis";
-
-type Row = {
-  address: `0x${string}`;
-  score: number;
-  attestationId: `0x${string}`;
-  strategyType: number;
-  verified: boolean;
-  feeRateBps: number;
-};
+import { STRATEGY_LABELS, RISK_LABELS } from "@/lib/config";
+import { loadDiscoverLeads, type DiscoverLead } from "@/lib/leads";
 
 export default function DiscoverPage() {
   const client = usePublicClient();
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<DiscoverLead[]>([]);
   const [strategyFilter, setStrategyFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
   const [error, setError] = useState<string>("");
@@ -30,36 +21,7 @@ export default function DiscoverPage() {
       setLoading(true);
       setError("");
       try {
-        const ranked = (await client.readContract({
-          address: config.leaderboard,
-          abi: leaderboardAbi,
-          functionName: "getRankedLeads",
-        })) as `0x${string}`[];
-
-        const next: Row[] = [];
-        for (const address of ranked) {
-          const scoreRec = await client.readContract({
-            address: config.leaderboard,
-            abi: leaderboardAbi,
-            functionName: "getScore",
-            args: [address],
-          });
-          const lead = await client.readContract({
-            address: config.registry,
-            abi: registryAbi,
-            functionName: "getLead",
-            args: [address],
-          });
-          next.push({
-            address,
-            score: Number(scoreRec.score),
-            attestationId: scoreRec.attestationId,
-            strategyType: Number(lead.strategyType),
-            verified: Boolean(lead.verified),
-            feeRateBps: Number(lead.feeRateBps),
-          });
-        }
-        next.sort((a, b) => b.score - a.score);
+        const next = await loadDiscoverLeads(client);
         if (!cancelled) setRows(next);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -99,9 +61,9 @@ export default function DiscoverPage() {
             edge in the clear.
           </p>
           <div className="hero-cta">
-            <Link className="btn" href="/follower/onboard">
+            <a className="btn" href="#discover">
               Start following
-            </Link>
+            </a>
             <Link className="btn ghost" href="/lead/onboard">
               Register as lead
             </Link>
@@ -111,7 +73,7 @@ export default function DiscoverPage() {
 
       <section className="section" id="discover">
         <h2>Discovery</h2>
-        <p>Ranked by on-chain AI Score from MirrorLeaderboard.</p>
+        <p>Registered leads on Coston2. Click Follow to deposit FXRP and copy that lead.</p>
         <div className="filters">
           <label>
             Strategy
@@ -139,7 +101,7 @@ export default function DiscoverPage() {
         {loading && <p className="muted">Loading Coston2 leaderboard…</p>}
         {error && <p className="err">{error}</p>}
         {!loading && !error && filtered.length === 0 && (
-          <p className="muted">No ranked leads yet. Run the AI score canary or register a lead.</p>
+          <p className="muted">No registered leads yet. Register as a lead first.</p>
         )}
         {filtered.length > 0 && (
           <table className="lead-table">
@@ -167,7 +129,9 @@ export default function DiscoverPage() {
                   </td>
                   <td>{(r.feeRateBps / 100).toFixed(2)}%</td>
                   <td>
-                    <Link href={`/lead/${r.address}`}>View</Link>
+                    <Link className="btn" href={`/lead/${r.address}`}>
+                      Follow
+                    </Link>
                   </td>
                 </tr>
               ))}

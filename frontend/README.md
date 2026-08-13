@@ -14,7 +14,7 @@ Production (Vercel): see [docs/VERCEL.md](../docs/VERCEL.md). Root Directory mus
 
 Addresses default from `config/coston2.json` via `NEXT_PUBLIC_MIRROR_*`.
 
-`NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` must be a base64 SPKI RSA public key. The signal page refuses to submit if it is missing (no plaintext fallback).
+`NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` is a fallback. The signal page prefers `/api/tee-info`, which reads the matching TEE `/info` via server-only `MATCHING_TEE_PROXY_URL` (the matching `EXT_PROXY_URL`, **not** `tunnel-ai`). After the Stage B tx, `/api/execute-match` waits for `MATCH_V1` and calls `executeMatch` with `EXECUTE_MATCH_PRIVATE_KEY`.
 
 ## Routes
 

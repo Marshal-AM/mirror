@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { keccak256, toBytes, parseEther } from "viem";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { keccak256, toBytes, parseUnits } from "viem";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { config, STRATEGY_LABELS } from "@/lib/config";
+import { config, STRATEGY_LABELS, FXRP_DECIMALS } from "@/lib/config";
 import { registryAbi } from "@/lib/abis";
+import { announceLead } from "@/lib/leads";
 
 export default function LeadOnboardPage() {
   const { address, isConnected } = useAccount();
@@ -16,12 +18,16 @@ export default function LeadOnboardPage() {
 
   const teeHash = keccak256(toBytes(config.teeEncryptPubKey || "mirror-tee-placeholder"));
 
+  useEffect(() => {
+    if (isSuccess && address) void announceLead(address);
+  }, [isSuccess, address]);
+
   function submit() {
     writeContract({
       address: config.registry,
       abi: registryAbi,
       functionName: "registerLead",
-      args: [strategyType, feeRateBps, parseEther(minAllocation || "0"), teeHash],
+      args: [strategyType, feeRateBps, parseUnits(minAllocation || "0", FXRP_DECIMALS), teeHash],
     });
   }
 
@@ -67,7 +73,12 @@ export default function LeadOnboardPage() {
       <button className="btn block" type="button" disabled={!isConnected || isPending || confirming} onClick={submit}>
         {isPending || confirming ? "Submitting…" : "Register lead"}
       </button>
-      {isSuccess && <p className="ok">Registered. Wallet: {address}</p>}
+      {isSuccess && (
+        <p className="ok">
+          Registered. Wallet: {address}. Followers can pick you on{" "}
+          <Link href="/#discover">Discover</Link>.
+        </p>
+      )}
       {error && <p className="err">{error.message}</p>}
     </section>
   );
