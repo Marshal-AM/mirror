@@ -125,10 +125,32 @@ a {
 .hero {
   min-height: calc(100vh - 7rem);
   display: grid;
-  align-content: center;
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 46%);
+  align-items: center;
+  gap: 1.5rem 2rem;
   padding: 2rem 0 4rem;
   animation: rise 0.7s ease both;
+}
+
+.hero-copy {
+  display: grid;
+  align-content: center;
+  gap: 1.25rem;
+}
+
+.hero-art {
+  justify-self: end;
+  width: 100%;
+  max-width: 480px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hero-art img {
+  width: 100%;
+  height: auto;
+  display: block;
+  mix-blend-mode: screen;
 }
 
 .hero-brand {
@@ -323,6 +345,17 @@ label {
   .nav-links {
     width: 100%;
     order: 3;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .hero-art {
+    max-width: 280px;
+    justify-self: center;
+    order: -1;
   }
 
   .lead-table {

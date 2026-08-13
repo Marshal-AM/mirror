@@ -55,19 +55,24 @@ export default function DiscoverPage() {
       <div style={{ position: "relative" }}>
         <div className="hero-plane" aria-hidden />
         <section className="hero">
-          <p className="hero-brand">Mirror</p>
-          <h1>Copy leads you can measure.</h1>
-          <p>
-            Rule-based lead scores on Coston2. Encrypted signals. Follow with FXRP — without handing over your
-            edge in the clear.
-          </p>
-          <div className="hero-cta">
-            <a className="btn" href="#discover">
-              Start following
-            </a>
-            <Link className="btn ghost" href="/lead/onboard">
-              Register as lead
-            </Link>
+          <div className="hero-copy">
+            <p className="hero-brand">Mirror</p>
+            <h1>Copy leads you can measure.</h1>
+            <p>
+              Rule-based lead scores on Coston2. Encrypted signals. Follow with FXRP — without handing over your
+              edge in the clear.
+            </p>
+            <div className="hero-cta">
+              <a className="btn" href="#discover">
+                Start following
+              </a>
+              <Link className="btn ghost" href="/lead/onboard">
+                Register as lead
+              </Link>
+            </div>
+          </div>
+          <div className="hero-art" aria-hidden>
+            <img src="/shard.png" alt="" />
           </div>
         </section>
       </div>
