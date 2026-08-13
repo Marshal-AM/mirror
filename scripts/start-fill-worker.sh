@@ -27,7 +27,7 @@ if [[ -z "${DEPLOYER_PRIVATE_KEY:-}" ]]; then
 fi
 
 pkill -f "relayer/execute-match-from-tee.ts" 2>/dev/null || true
-sudo docker rm -f mirror-fill-worker 2>/dev/null || true
+docker rm -f mirror-fill-worker 2>/dev/null || true
 
 if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
   nohup npm run tee:execute-match -w scripts >> /tmp/fill-worker.log 2>&1 &
@@ -38,7 +38,8 @@ if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
 fi
 
 echo "node not on PATH — starting fill-worker in Docker (host network → :6674)"
-sudo docker run -d --restart unless-stopped --name mirror-fill-worker --network host \
+docker rm -f mirror-fill-worker 2>/dev/null || true
+docker run -d --restart unless-stopped --name mirror-fill-worker --network host \
   -v "$ROOT:/app" \
   -w /app \
   -e EXT_PROXY_URL="$EXT_PROXY_URL" \
@@ -49,4 +50,4 @@ sudo docker run -d --restart unless-stopped --name mirror-fill-worker --network 
   bash -lc "cd /app/scripts && npm install --omit=dev && npx tsx relayer/execute-match-from-tee.ts"
 echo "container mirror-fill-worker"
 sleep 8
-sudo docker logs --tail 30 mirror-fill-worker || true
+docker logs --tail 30 mirror-fill-worker || true
