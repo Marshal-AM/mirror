@@ -5,12 +5,15 @@ services:
       - ./config/proxy/extension_proxy.coston2.docker.toml:/app/config/config.toml:ro
 
   extension-tee:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - CHAIN_URL=${CHAIN_URL:-https://coston2-api.flare.network/ext/C/rpc}
       - CHAIN_ID=${CHAIN_ID:-114}
-      - SYNTHETIC_OUTCOME_FIXTURE=${SYNTHETIC_OUTCOME_FIXTURE:-1}
-      - MATCHING_ENGINE_PRIVATE_LOG_URL=${MATCHING_ENGINE_PRIVATE_LOG_URL:-}
-      - TEE_INTERNAL_TOKEN=${TEE_INTERNAL_TOKEN:-}
+      - TEE_INTERNAL_TOKEN=${TEE_INTERNAL_TOKEN:-mirror-coston2-tee-internal}
+      - MATCHING_ENGINE_PRIVATE_LOG_URL=${MATCHING_ENGINE_PRIVATE_LOG_URL:-http://host.docker.internal:7702}
+      - MIRROR_OUTCOME_LOG_URL=${MIRROR_OUTCOME_LOG_URL:-}
+      - SYNTHETIC_OUTCOME_FIXTURE=${SYNTHETIC_OUTCOME_FIXTURE:-}
 
 networks:
   default:
