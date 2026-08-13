@@ -102,7 +102,7 @@ bash scripts/start-fill-worker.sh
 
 Keep `NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` in sync with matching `/info` after any TEE recreate. `MATCHING_TEE_PROXY_URL` / `EXECUTE_MATCH_PRIVATE_KEY` are optional on Vercel now.
 
-**Lead scores stay 0 until a vault fill.** Discover only reads `MirrorLeaderboard.getScore`. Vercel `/api/refresh-score` does not call the AI TEE (Hobby 10s). After `executeMatch`, the FCC VM fill-worker runs `SCORE_V1` (localhost `:6684`) or the same in-repo formula, then `updateScore`.
+**Lead scores stay 0 until vault fills exist.** Discover only reads `MirrorLeaderboard.getScore`. After `executeMatch`, the FCC VM fill-worker records FTSO mark-to-market `pnlBps` (plus fill vs quote), scores the full history, then `updateScore`. Sharpe is 0 with a single fill; it moves after ≥2 fills at different FXRP prices.
 
 ```
 # on the VM, after git pull — do not restart matching TEE

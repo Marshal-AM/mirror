@@ -28,6 +28,7 @@ import {
 } from "viem";
 import { clientsFromEnv, loadConfig } from "./fdc.ts";
 import { publishLeadScore, recordOutcomeHttp } from "../ai-agent/score-lead.ts";
+import { recordFillOutcome, scoringEvents } from "../lib/fill-outcomes.ts";
 
 const SENDER_ABI = parseAbi([
   "function swapRouter() view returns (address)",
@@ -181,6 +182,14 @@ async function main() {
     const targets = followers.length > 0 ? followers : [lead];
     const sizeBps = BigInt(process.env.EXECUTE_SIZE_BPS ?? "1000"); // 10% of vault if TEE amount is unusable
     let fills = 0;
+    let lastExec:
+      | {
+          receipt: Awaited<ReturnType<typeof publicClient.waitForTransactionReceipt>>;
+          amountIn: bigint;
+          tokenIn: Address;
+          tokenOut: Address;
+        }
+      | undefined;
 
     for (const follower of targets) {
       const bal = (await publicClient.readContract({
@@ -237,29 +246,40 @@ async function main() {
       if (execReceipt.status !== "success") throw new Error(`executeMatch reverted ${execHash}`);
       console.log(`executeMatch follower=${follower} amountIn=${amountIn} tx=${execHash}`);
       fills++;
-      void tokenIn;
-      void tokenOut;
+      lastExec = { receipt: execReceipt, amountIn, tokenIn, tokenOut };
       void quoted;
     }
     if (fills === 0) throw new Error("no follower vault balance to swap — deposit FXRP then follow this lead");
     processed.add(txHash.toLowerCase());
     console.log(`OK: ${fills} SparkDEX-ABI fill(s) on MockSparkDexRouter`);
-    const event = {
-      lead,
-      timestamp: Math.floor(Date.now() / 1000),
-      pnlBps: 0,
-      direction: "SELL" as const,
-      sizePct: Number(sizeBps),
-      txHash,
-    };
-    void recordOutcomeHttp(event).catch((e) =>
-      console.error(`outcome log: ${e instanceof Error ? e.message : e}`),
-    );
-    try {
-      const scored = await publishLeadScore({ lead, events: [event] });
-      console.log(`score=${scored.score} via=${scored.via} tx=${scored.scoreTx}`);
-    } catch (e) {
-      console.error(`score: ${e instanceof Error ? e.message : e}`);
+    if (lastExec) {
+      try {
+        const history = await recordFillOutcome({
+          publicClient,
+          sender,
+          router,
+          priceReader: getAddress(cfg.contracts.ftsoPriceReader) as Address,
+          lead,
+          fxrp,
+          tokenIn: lastExec.tokenIn,
+          tokenOut: lastExec.tokenOut,
+          amountIn: lastExec.amountIn,
+          execReceipt: lastExec.receipt,
+          sizePct: Number(sizeBps),
+        });
+        const events = scoringEvents(history);
+        for (const e of events.slice(-1)) {
+          void recordOutcomeHttp({ ...e, txHash: history.at(-1)?.txHash }).catch((err) =>
+            console.error(`outcome log: ${err instanceof Error ? err.message : err}`),
+          );
+        }
+        const scored = await publishLeadScore({ lead, events });
+        console.log(
+          `score=${scored.score} via=${scored.via} events=${scored.eventCount} tx=${scored.scoreTx}`,
+        );
+      } catch (e) {
+        console.error(`score: ${e instanceof Error ? e.message : e}`);
+      }
     }
   }
 

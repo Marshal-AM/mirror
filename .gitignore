@@ -42,6 +42,9 @@ Thumbs.db
 # Local config overrides
 config/*.local.json
 
+# Fill-worker lead outcome history (PnL / SCORE_V1)
+scripts/.outcomes/
+
 # Logs
 *.log
 npm-debug.log*

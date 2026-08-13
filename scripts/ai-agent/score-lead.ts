@@ -12,8 +12,10 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getAddress, parseAbi, type Address, type Hex } from "viem";
 import { scoreLead, type OutcomeEvent } from "../../fce-ai-agent/typescript/src/app/scoring.ts";
-import { clientsFromEnv } from "../relayer/fdc.ts";
+import { clientsFromEnv, loadConfig } from "../relayer/fdc.ts";
 import { publishScore } from "./publish-scores.ts";
+import { seedLeadFillsFromChain } from "../lib/fill-outcomes.ts";
+import { loadLeadOutcomes, scoringEvents } from "../lib/outcome-store.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 dotenv.config({ path: join(ROOT, ".env") });
@@ -216,17 +218,20 @@ async function main() {
   if (process.env.SCORE_EVENTS) {
     events = JSON.parse(process.env.SCORE_EVENTS) as OutcomeEvent[];
   } else {
-    events = [
-      {
-        lead,
-        timestamp: Math.floor(Date.now() / 1000),
-        pnlBps: Number(process.env.SCORE_PNL_BPS ?? "0"),
-        direction: (process.env.SCORE_DIRECTION === "BUY" ? "BUY" : "SELL") as "BUY" | "SELL",
-        sizePct: Number(process.env.SCORE_SIZE_PCT ?? "1000"),
-      },
-    ];
+    const cfg = loadConfig();
+    const { publicClient } = clientsFromEnv();
+    await seedLeadFillsFromChain({
+      publicClient,
+      sender: getAddress(cfg.contracts.instructionSender),
+      lead: getAddress(lead),
+      router: getAddress(cfg.contracts.mockSparkDexRouter),
+      priceReader: getAddress(cfg.contracts.ftsoPriceReader),
+      fxrp: getAddress(cfg.tokens.fxrp),
+    });
+    events = scoringEvents(loadLeadOutcomes(lead));
   }
-  for (const e of events) await recordOutcomeHttp(e);
+  if (events.length === 0) throw new Error("no on-chain fills / stored outcomes for this lead");
+  for (const e of events.slice(-3)) await recordOutcomeHttp(e);
   const result = await publishLeadScore({ lead, events });
   console.log(JSON.stringify(result));
 }
