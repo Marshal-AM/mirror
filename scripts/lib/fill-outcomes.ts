@@ -98,7 +98,7 @@ export async function seedLeadFillsFromChain(opts: {
   const existing = loadLeadOutcomes(opts.lead);
   if (existing.length >= 2) return existing;
   const head = await opts.publicClient.getBlockNumber();
-  const lookback = opts.lookbackBlocks ?? 450n;
+  const lookback = opts.lookbackBlocks ?? BigInt(process.env.FILL_LOOKBACK_BLOCKS ?? "2000");
   const from = head > lookback ? head - lookback : 0n;
   const chunk = 30n;
   const seen = new Set<string>();
