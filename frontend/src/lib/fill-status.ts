@@ -37,10 +37,16 @@ export async function fillsAfterSignalTx(txHash: Hex): Promise<{
     fromBlock: receipt.blockNumber,
     toBlock: "latest",
   });
-  const txs = [
-    ...new Set(
-      logs.filter((e) => getAddress(e.args.lead).toLowerCase() === lead.toLowerCase()).map((e) => e.transactionHash),
-    ),
-  ];
+  const txs: Hex[] = [];
+  const seen = new Set<string>();
+  for (const e of logs) {
+    const eventLead = e.args.lead;
+    const hash = e.transactionHash;
+    if (!eventLead || !hash) continue;
+    if (getAddress(eventLead) !== lead) continue;
+    if (seen.has(hash)) continue;
+    seen.add(hash);
+    txs.push(hash);
+  }
   return { pending: txs.length === 0, lead, fills: txs.length, txs };
 }
