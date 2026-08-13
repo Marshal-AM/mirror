@@ -72,15 +72,33 @@ NEXT_PUBLIC_MASTER_ACCOUNT_CONTROLLER=0x434936d47503353f06750Db1A444DBDC5F0AD37c
 NEXT_PUBLIC_FXRP_ADDRESS=0x0b6A3645c240605887a5532109323A3E12273dc7
 NEXT_PUBLIC_XRPL_OPERATOR_ADDRESS=rEyj8nsHLdgt79KJWzXR5BgF7ZbaohbXwq
 NEXT_PUBLIC_MIRROR_ALERTS_URL=/api/alerts
-NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY=<paste from frontend/.env.local>
+NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY=<matching TEE secp256k1 0x04||x||y — NOT an RSA MIIB key>
 ```
+
+`NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` must be the **matching** FCC tee-node secp256k1 key (65-byte uncompressed hex starting `0x04…`). It is **not** RSA. If Vercel still has a `MIIB…` / `-----BEGIN PUBLIC KEY-----` value from the old WebCrypto path, Encrypt will fail.
+
+Build it from matching `EXT_PROXY_URL` `/info` (`publicKey.x` + `publicKey.y`), **not** the AI tunnel:
+
+```
+0x04 + x (no 0x) + y (no 0x)
+```
+
+Current matching TEE (ext 66187 / `type-sullivan-valve-beer.trycloudflare.com`):
+
+```
+NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY=0x04cd7b8ab05d946fb034293b3737ae1c312972f6ce55450f375c7a85095f1c3cf6fcdbe56c0927b5cf88b46fe5cc7d4c9b8949eb0a17dd0b327f93e53c700bd552
+```
+
+After changing any `NEXT_PUBLIC_*` var you **must Redeploy** (they are baked at build).
 
 For **Encrypt & submit → vault fill** (server-only, not `NEXT_PUBLIC_`):
 
 ```
-MATCHING_TEE_PROXY_URL=<matching EXT_PROXY_URL from fce-matching-engine/.env on the VM — not tunnel-ai>
+MATCHING_TEE_PROXY_URL=https://type-sullivan-valve-beer.trycloudflare.com
 EXECUTE_MATCH_PRIVATE_KEY=<same as DEPLOYER_PRIVATE_KEY>
 ```
+
+`MATCHING_TEE_PROXY_URL` is the matching `EXT_PROXY_URL` on the VM — **not** `tunnel-ai` / `personnel-spouse-promote-minor`. trycloudflare URLs are often unreachable from Vercel, so the baked secp256k1 `NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` must still be correct.
 
 Hobby Vercel functions may time out before the TEE returns; local `npm run dev` is the reliable fill path. If those vars are unset, the signal still lands on-chain and the UI reports fill skipped.
 

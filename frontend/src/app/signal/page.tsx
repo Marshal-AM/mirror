@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAccount, useWriteContract } from "wagmi";
 import { config } from "@/lib/config";
 import { instructionSenderAbi } from "@/lib/abis";
-import { encryptSignal, FCC_INSTRUCTION_FEE_WEI } from "@/lib/encrypt";
+import { encryptSignal, FCC_INSTRUCTION_FEE_WEI, isSecp256k1EncryptPubKey } from "@/lib/encrypt";
 
 export default function SignalPage() {
   const { address, isConnected } = useAccount();
@@ -17,18 +17,24 @@ export default function SignalPage() {
   const [busy, setBusy] = useState(false);
 
   async function resolveEncryptKey(): Promise<string> {
+    let liveError = "";
     try {
       const res = await fetch("/api/tee-info", { cache: "no-store" });
       const body = (await res.json()) as { ok?: boolean; encryptPubKey?: string; error?: string };
-      if (body.encryptPubKey) return body.encryptPubKey;
-      if (config.teeEncryptPubKey) return config.teeEncryptPubKey;
-      throw new Error(body.error || "Matching TEE pubkey unavailable");
-    } catch {
-      if (config.teeEncryptPubKey) return config.teeEncryptPubKey;
-      throw new Error(
-        "TEE encrypt public key missing. Set MATCHING_TEE_PROXY_URL or NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY.",
-      );
+      if (body.encryptPubKey && isSecp256k1EncryptPubKey(body.encryptPubKey)) {
+        return body.encryptPubKey;
+      }
+      liveError = body.error || `Matching TEE /info unavailable (HTTP ${res.status})`;
+    } catch (e) {
+      liveError = e instanceof Error ? e.message : String(e);
     }
+    if (config.teeEncryptPubKey && isSecp256k1EncryptPubKey(config.teeEncryptPubKey)) {
+      return config.teeEncryptPubKey;
+    }
+    throw new Error(
+      liveError ||
+        "TEE encrypt public key missing. Set MATCHING_TEE_PROXY_URL or NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY (secp256k1 0x04||x||y, not RSA).",
+    );
   }
 
   async function submit() {

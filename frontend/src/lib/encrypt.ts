@@ -53,15 +53,29 @@ function concatBytes(...parts: Uint8Array[]): Uint8Array {
   return out;
 }
 
+export function isRsaEncryptPubKey(pubKey: string): boolean {
+  const t = pubKey.trim();
+  return t.startsWith("MIIB") || t.includes("-----BEGIN");
+}
+
+export function isSecp256k1EncryptPubKey(pubKey: string): boolean {
+  try {
+    parseTeeEncryptPubKey(pubKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Parse uncompressed secp256k1 pubkey (0x04||x||y). Rejects leftover RSA SPKI. */
 export function parseTeeEncryptPubKey(pubKey: string): Uint8Array {
   const trimmed = pubKey.trim();
   if (!trimmed) {
     throw new Error("TEE encrypt public key missing. Set NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY.");
   }
-  if (trimmed.startsWith("MIIB") || trimmed.includes("-----BEGIN")) {
+  if (isRsaEncryptPubKey(trimmed)) {
     throw new Error(
-      "NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY is an RSA key. FCC tee-node expects secp256k1 from proxy /info (0x04||x||y).",
+      "Encrypt pubkey is RSA (MIIB / PEM), leftover from the old WebCrypto path. FCC tee-node needs secp256k1 0x04||x||y from the matching TEE /info. On Vercel: replace NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY with that hex and Redeploy.",
     );
   }
   let bytes = hexToBytes(trimmed);
