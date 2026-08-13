@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { usePublicClient } from "wagmi";
 import { STRATEGY_LABELS, RISK_LABELS } from "@/lib/config";
 import { loadDiscoverLeads, type DiscoverLead } from "@/lib/leads";
-import { ensureLeadScored } from "@/lib/ensure-score";
 
 export default function DiscoverPage() {
   const client = usePublicClient();
@@ -14,7 +13,6 @@ export default function DiscoverPage() {
   const [riskFilter, setRiskFilter] = useState<string>("all");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [scoringNote, setScoringNote] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -26,22 +24,6 @@ export default function DiscoverPage() {
         const next = await loadDiscoverLeads(client);
         if (cancelled) return;
         setRows(next);
-        const unscored = next.filter((r) => r.score === 0);
-        if (unscored.length === 0) return;
-        setScoringNote("Publishing lead scores…");
-        for (const row of unscored) {
-          if (cancelled) return;
-          try {
-            const score = await ensureLeadScored(row.address);
-            if (score == null || cancelled) continue;
-            setRows((prev) =>
-              prev.map((r) => (r.address === row.address ? { ...r, score } : r)),
-            );
-          } catch (e) {
-            if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-          }
-        }
-        if (!cancelled) setScoringNote("");
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -122,7 +104,6 @@ export default function DiscoverPage() {
           </label>
         </div>
         {loading && <p className="muted">Loading Coston2 leaderboard…</p>}
-        {scoringNote && <p className="muted">{scoringNote}</p>}
         {error && <p className="err">{error}</p>}
         {!loading && !error && filtered.length === 0 && (
           <p className="muted">No registered leads yet. Register as a lead first.</p>

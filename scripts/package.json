@@ -19,6 +19,7 @@
     "ai:score-v1-tee": "tsx ai-agent/score-v1-tee-canary.ts",
     "ai:set-extension-id": "tsx ai-agent/set-extension-id.ts",
     "ai:publish-scores": "tsx ai-agent/publish-scores.ts",
+    "ai:score-lead": "tsx ai-agent/score-lead.ts",
     "ai:drift-canary": "tsx ai-agent/drift-canary.ts",
     "ai:health-canary": "tsx ai-agent/health-canary.ts",
     "ai:alert-webhook": "tsx ai-agent/alert-webhook.ts",

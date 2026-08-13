@@ -16,8 +16,17 @@ if [[ -f "$ROOT/fce-matching-engine/.env" ]]; then
   source "$ROOT/fce-matching-engine/.env"
   set +a
 fi
+# Matching tunnel must stay on :6674. AI .env also has EXT_PROXY_URL.
+MATCHING_PROXY="${EXT_PROXY_URL:-http://127.0.0.1:6674}"
+if [[ -f "$ROOT/fce-ai-agent/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/fce-ai-agent/.env"
+  set +a
+fi
+export AI_TEE_PROXY_URL="${AI_TEE_PROXY_URL:-${AI_EXT_PROXY_URL:-http://127.0.0.1:6684}}"
+export EXT_PROXY_URL="$MATCHING_PROXY"
 export PATH="${PATH}:/usr/local/go/bin:${HOME}/.local/bin"
-export EXT_PROXY_URL="${EXT_PROXY_URL:-http://127.0.0.1:6674}"
 export DEPLOYER_PRIVATE_KEY="${DEPLOYER_PRIVATE_KEY:-${DEPLOYMENT_PRIVATE_KEY:-}}"
 export FLARE_RPC_URL="${FLARE_RPC_URL:-${CHAIN_URL:-https://coston2-api.flare.network/ext/C/rpc}}"
 
@@ -43,6 +52,11 @@ docker run -d --restart unless-stopped --name mirror-fill-worker --network host 
   -v "$ROOT:/app" \
   -w /app \
   -e EXT_PROXY_URL="$EXT_PROXY_URL" \
+  -e AI_TEE_PROXY_URL="${AI_TEE_PROXY_URL:-http://127.0.0.1:6684}" \
+  -e AI_AGENT_SENDER="${AI_AGENT_SENDER:-}" \
+  -e PERSONA_AI_AGENT_SIGNER_PRIVATE_KEY="${PERSONA_AI_AGENT_SIGNER_PRIVATE_KEY:-}" \
+  -e MIRROR_OUTCOME_LOG_URL="${MIRROR_OUTCOME_LOG_URL:-}" \
+  -e TEE_INTERNAL_TOKEN="${TEE_INTERNAL_TOKEN:-mirror-coston2-tee-internal}" \
   -e DEPLOYER_PRIVATE_KEY="$DEPLOYER_PRIVATE_KEY" \
   -e FLARE_RPC_URL="$FLARE_RPC_URL" \
   -e FILL_LOOKBACK_BLOCKS="${FILL_LOOKBACK_BLOCKS:-400}" \

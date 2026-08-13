@@ -102,16 +102,14 @@ bash scripts/start-fill-worker.sh
 
 Keep `NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` in sync with matching `/info` after any TEE recreate. `MATCHING_TEE_PROXY_URL` / `EXECUTE_MATCH_PRIVATE_KEY` are optional on Vercel now.
 
-For **live scoring** (same token as both FCEs on the VM):
+**Lead scores stay 0 until a vault fill.** Discover only reads `MirrorLeaderboard.getScore`. Vercel `/api/refresh-score` does not call the AI TEE (Hobby 10s). After `executeMatch`, the FCC VM fill-worker runs `SCORE_V1` (localhost `:6684`) or the same in-repo formula, then `updateScore`.
 
 ```
-TEE_INTERNAL_TOKEN=mirror-coston2-tee-internal
-AI_TEE_PROXY_URL=https://personnel-spouse-promote-minor.trycloudflare.com
-AI_AGENT_SENDER=0x18CA8047099C6a5ca241b25682a3629695435b42
-PERSONA_AI_AGENT_SIGNER_PRIVATE_KEY=<from root .env>
+# on the VM, after git pull — do not restart matching TEE
+LEAD=0xYourLead npm run ai:score-lead -w scripts
 ```
 
-On the AI FCE `.env` set `MIRROR_OUTCOME_LOG_URL=https://YOUR-APP.vercel.app/api/outcomes` so fill outcomes in Supabase are included in `SCORE_V1`.
+Optional: `MIRROR_OUTCOME_LOG_URL=https://YOUR-APP.vercel.app/api/outcomes` plus `TEE_INTERNAL_TOKEN` so fills also land in Supabase. `PERSONA_AI_AGENT_SIGNER_PRIVATE_KEY` must stay on the VM (not Vercel).
 
 ### Supabase (Discover leads + alerts)
 

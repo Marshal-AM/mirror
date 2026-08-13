@@ -27,6 +27,7 @@ import {
   type Hex,
 } from "viem";
 import { clientsFromEnv, loadConfig } from "./fdc.ts";
+import { publishLeadScore, recordOutcomeHttp } from "../ai-agent/score-lead.ts";
 
 const SENDER_ABI = parseAbi([
   "function swapRouter() view returns (address)",
@@ -243,6 +244,23 @@ async function main() {
     if (fills === 0) throw new Error("no follower vault balance to swap — deposit FXRP then follow this lead");
     processed.add(txHash.toLowerCase());
     console.log(`OK: ${fills} SparkDEX-ABI fill(s) on MockSparkDexRouter`);
+    const event = {
+      lead,
+      timestamp: Math.floor(Date.now() / 1000),
+      pnlBps: 0,
+      direction: "SELL" as const,
+      sizePct: Number(sizeBps),
+      txHash,
+    };
+    void recordOutcomeHttp(event).catch((e) =>
+      console.error(`outcome log: ${e instanceof Error ? e.message : e}`),
+    );
+    try {
+      const scored = await publishLeadScore({ lead, events: [event] });
+      console.log(`score=${scored.score} via=${scored.via} tx=${scored.scoreTx}`);
+    } catch (e) {
+      console.error(`score: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   const oneShot = process.env.SIGNAL_TX as Hex | undefined;

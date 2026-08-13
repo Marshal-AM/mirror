@@ -7,7 +7,6 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { config, STRATEGY_LABELS, FXRP_DECIMALS } from "@/lib/config";
 import { registryAbi } from "@/lib/abis";
 import { announceLead } from "@/lib/leads";
-import { ensureLeadScored } from "@/lib/ensure-score";
 
 export default function LeadOnboardPage() {
   const { address, isConnected } = useAccount();
@@ -25,19 +24,9 @@ export default function LeadOnboardPage() {
     if (!isSuccess || !address) return;
     void (async () => {
       await announceLead(address);
-      setScoreMsg("Publishing lead score…");
-      try {
-        const score = await ensureLeadScored(address);
-        if (score === 0) {
-          setScoreMsg("Registered. Score stays 0 until this lead has a decrypted signal or vault fill (not a demo fixture).");
-        } else if (score != null) {
-          setScoreMsg(`Score published: ${score}`);
-        } else {
-          setScoreMsg("Registered. Score already on-chain.");
-        }
-      } catch (e) {
-        setScoreMsg(`Registered. Score publish failed: ${e instanceof Error ? e.message : String(e)}`);
-      }
+      setScoreMsg(
+        "Registered. Score stays 0 until a follower vault fill is scored on the FCC VM (not a demo fixture).",
+      );
     })();
   }, [isSuccess, address]);
 
