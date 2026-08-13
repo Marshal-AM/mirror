@@ -57,10 +57,10 @@ export default function DiscoverPage() {
         <section className="hero">
           <div className="hero-copy">
             <p className="hero-brand">Mirror</p>
-            <h1>Copy leads you can measure.</h1>
+            <h1>Private copy trading on Flare.</h1>
             <p>
-              Rule-based lead scores on Coston2. Encrypted signals. Follow with FXRP — without handing over your
-              edge in the clear.
+              A lead encrypts a signal. Mirror’s TEE decrypts it and copies the trade into follower FXRP vaults.
+              Scores from those fills help you pick who to follow — and skip who is not earning.
             </p>
             <div className="hero-cta">
               <a className="btn" href="#discover">
@@ -80,9 +80,8 @@ export default function DiscoverPage() {
       <section className="section" id="discover">
         <h2>Discovery</h2>
         <p>
-          Registered leads on Coston2. Scores are a rule-based composite (Sharpe, drawdown,
-          consistency, completeness) published automatically. Click Follow to deposit FXRP and copy
-          that lead.
+          Live leads on Coston2. Follow deposits FXRP into a vault; the next encrypted signal is
+          copied for you. Scores are Sharpe, drawdown, consistency, and completeness from real fills.
         </p>
         <div className="filters">
           <label>
