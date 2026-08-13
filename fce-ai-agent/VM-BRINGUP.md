@@ -121,6 +121,30 @@ From repo root (gitignored env, do not commit):
 AI_AGENT_SENDER=0x<AI_AGENT_SENDER> npm run ai:set-extension-id
 ```
 
+## 8b. Live scoring (no synthetic fixture)
+
+Same `TEE_INTERNAL_TOKEN` in `fce-matching-engine/.env`, `fce-ai-agent/.env`, and Vercel.
+
+Matching (picks up `127.0.0.1:7702` + token — does **not** mint a new teeId):
+
+```bash
+cd fce-matching-engine
+# add TEE_INTERNAL_TOKEN=mirror-coston2-tee-internal to .env if missing
+docker compose -p tunnel up -d
+```
+
+AI (rebuild so SCORE_V1 fetches the log):
+
+```bash
+cd fce-ai-agent
+# MATCHING_ENGINE_PRIVATE_LOG_URL=http://host.docker.internal:7702
+# MIRROR_OUTCOME_LOG_URL=https://YOUR-VERCEL-APP.vercel.app/api/outcomes
+# SYNTHETIC_OUTCOME_FIXTURE must be unset
+./scripts/start-services.sh --chain coston2 --tunnel
+```
+
+Do **not** run matching `post-build.sh` or `setExtensionId` on `0xf082…`.
+
 ## 9. SCORE_V1 canary
 
 ```bash

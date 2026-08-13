@@ -77,10 +77,23 @@ export default function SignalPage() {
         error?: string;
         fills?: number;
         txs?: string[];
+        score?: number;
+        eventCount?: number;
+        scoreError?: string;
       };
       if (fill.ok) {
         setFillTxs(fill.txs ?? []);
-        setStatus(`Filled ${fill.fills} follower vault swap(s) on MockSparkDexRouter.`);
+        const scoreBit =
+          typeof fill.score === "number"
+            ? ` Lead score ${fill.score} from ${fill.eventCount ?? 0} outcome(s).`
+            : fill.scoreError
+              ? ` Score update failed: ${fill.scoreError}`
+              : "";
+        setStatus(
+          (fill.fills
+            ? `Filled ${fill.fills} follower vault swap(s) on MockSparkDexRouter.`
+            : "TEE decrypted; no vault FXRP to sell.") + scoreBit,
+        );
       } else if (fill.skipped) {
         setStatus(`Signal confirmed ${tx}. Fill skipped: ${fill.error}`);
       } else {

@@ -15,9 +15,15 @@ export function ensureLeadScored(lead: string): Promise<number | null> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lead }),
       });
-      const body = (await res.json()) as { ok?: boolean; score?: number; error?: string };
+      const body = (await res.json()) as {
+        ok?: boolean;
+        score?: number;
+        skipped?: boolean;
+        error?: string;
+      };
       if (!body.ok) throw new Error(body.error || `score HTTP ${res.status}`);
       done.add(key);
+      if (body.skipped) return typeof body.score === "number" ? body.score : 0;
       return typeof body.score === "number" ? body.score : null;
     } finally {
       inFlight.delete(key);

@@ -11,7 +11,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { defineChain } from "viem";
-import { config, STRATEGY_LABELS } from "./config";
+import { config } from "./config";
 import { instructionIdFromReceipt } from "./fcc";
 
 const AI_SENDER = (process.env.AI_AGENT_SENDER ||
@@ -108,17 +108,14 @@ async function fetchTeeResult(proxyUrl: string, instructionId: Hex) {
   throw new Error(`timeout waiting for SCORE_V1 ${instructionId}`);
 }
 
-function fixtureForStrategy(strategyType: number): "momentum" | "mean-reversion" {
-  const label = STRATEGY_LABELS[strategyType] ?? "momentum";
-  return label === "mean-reversion" ? "mean-reversion" : "momentum";
-}
-
 export async function refreshLeadScore(leadRaw: string): Promise<{
   lead: Address;
   score: number;
-  scoreTx: Hex;
+  scoreTx: Hex | null;
   instructionId: Hex;
   signalTx: Hex;
+  eventCount: number;
+  skipped?: boolean;
 }> {
   loadSidecarEnv();
   const lead = getAddress(leadRaw);
@@ -162,12 +159,11 @@ export async function refreshLeadScore(leadRaw: string): Promise<{
     throw new Error("address is not a registered lead");
   }
 
-  const fixture = fixtureForStrategy(Number(leadInfo.strategyType));
   const signalTx = await sendWallet.writeContract({
     address: getAddress(AI_SENDER),
     abi: SENDER_ABI,
     functionName: "sendScoreV1",
-    args: [jsonToHex({ lead, fixture })],
+    args: [jsonToHex({ lead })],
     value: FEE,
     gas: 3_000_000n,
   });
@@ -179,8 +175,12 @@ export async function refreshLeadScore(leadRaw: string): Promise<{
   const tee = await fetchTeeResult(proxyUrl, instructionId);
   const decoded = decodeData(tee.data);
   const score = Number(decoded?.score);
+  const eventCount = Number(decoded?.eventCount ?? 0);
   if (!Number.isFinite(score) || score < 0 || score > 100) {
     throw new Error(`SCORE_V1 returned no score: ${JSON.stringify(decoded)}`);
+  }
+  if (eventCount === 0) {
+    return { lead, score: 0, scoreTx: null, instructionId, signalTx, eventCount: 0, skipped: true };
   }
   const attestationId = (
     typeof decoded?.attestationId === "string" && decoded.attestationId.startsWith("0x")
@@ -198,5 +198,5 @@ export async function refreshLeadScore(leadRaw: string): Promise<{
   const scoreReceipt = await publicClient.waitForTransactionReceipt({ hash: scoreTx });
   if (scoreReceipt.status !== "success") throw new Error(`updateScore reverted ${scoreTx}`);
 
-  return { lead, score, scoreTx, instructionId, signalTx };
+  return { lead, score, scoreTx, instructionId, signalTx, eventCount };
 }

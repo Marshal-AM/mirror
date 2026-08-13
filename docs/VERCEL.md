@@ -102,6 +102,17 @@ EXECUTE_MATCH_PRIVATE_KEY=<same as DEPLOYER_PRIVATE_KEY>
 
 Hobby Vercel functions may time out before the TEE returns; local `npm run dev` is the reliable fill path. If those vars are unset, the signal still lands on-chain and the UI reports fill skipped.
 
+For **live scoring** (same token as both FCEs on the VM):
+
+```
+TEE_INTERNAL_TOKEN=mirror-coston2-tee-internal
+AI_TEE_PROXY_URL=https://personnel-spouse-promote-minor.trycloudflare.com
+AI_AGENT_SENDER=0x18CA8047099C6a5ca241b25682a3629695435b42
+PERSONA_AI_AGENT_SIGNER_PRIVATE_KEY=<from root .env>
+```
+
+On the AI FCE `.env` set `MIRROR_OUTCOME_LOG_URL=https://YOUR-APP.vercel.app/api/outcomes` so fill outcomes in Supabase are included in `SCORE_V1`.
+
 ### Supabase (Discover leads + alerts)
 
 Vercel serverless memory resets on cold start. Persist the lead directory and in-app alerts in Supabase:

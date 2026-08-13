@@ -45,6 +45,12 @@ services:
       - EXTENSION_PORT=7702
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SIMULATED_TEE=${SIMULATED_TEE:-true}
+      - TEE_INTERNAL_TOKEN=${TEE_INTERNAL_TOKEN:-mirror-coston2-tee-internal}
+      - MATCHING_ENGINE_PRIVATE_LOG_URL=${MATCHING_ENGINE_PRIVATE_LOG_URL:-http://host.docker.internal:7702}
+      - MIRROR_OUTCOME_LOG_URL=${MIRROR_OUTCOME_LOG_URL:-}
+      - SYNTHETIC_OUTCOME_FIXTURE=${SYNTHETIC_OUTCOME_FIXTURE:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - ext-proxy
 

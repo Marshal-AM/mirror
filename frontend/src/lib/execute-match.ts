@@ -62,7 +62,7 @@ export async function executeMatchFromSignalTx(opts: {
   txHash: Hex;
   proxyUrl: string;
   privateKey: Hex;
-}): Promise<{ fills: number; instructionId: Hex; txs: Hex[] }> {
+}): Promise<{ fills: number; instructionId: Hex; txs: Hex[]; lead: Address }> {
   const account = privateKeyToAccount(opts.privateKey);
   const publicClient = createPublicClient({ chain: coston2, transport: http(config.rpcUrl) });
   const wallet = createWalletClient({ account, chain: coston2, transport: http(config.rpcUrl) });
@@ -151,8 +151,5 @@ export async function executeMatchFromSignalTx(opts: {
     txs.push(execHash);
   }
 
-  if (txs.length === 0) {
-    throw new Error("followers have no vault FXRP to sell");
-  }
-  return { fills: txs.length, instructionId, txs };
+  return { fills: txs.length, instructionId, txs, lead };
 }

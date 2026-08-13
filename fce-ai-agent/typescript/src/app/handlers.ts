@@ -125,6 +125,7 @@ export async function handleScoreV1(msg: string): Promise<HandlerResult> {
   }
 
   let events: OutcomeEvent[] = [];
+  // Canaries may pass `fixture`. Production SCORE_V1 (Vercel) must not.
   if (process.env.SYNTHETIC_OUTCOME_FIXTURE === "1" || parsed.fixture) {
     const fixture = parsed.fixture ?? "momentum";
     events =
@@ -137,10 +138,6 @@ export async function handleScoreV1(msg: string): Promise<HandlerResult> {
     } catch (e) {
       return [null, 0, `outcome log: ${e instanceof Error ? e.message : String(e)}`];
     }
-  }
-
-  if (events.length === 0) {
-    return [null, 0, "no outcome events for lead"];
   }
 
   const breakdown = scoreLead(events);
@@ -177,15 +174,51 @@ export async function handleScoreV1(msg: string): Promise<HandlerResult> {
   return [bytesToHex(Buffer.from(JSON.stringify(result), "utf-8")), 1, null];
 }
 
+function outcomeLogUrl(base: string, lead: string): string {
+  const trimmed = base.replace(/\/$/, "");
+  const hasPath = /\/(internal\/outcome-log|api\/outcomes)$/.test(trimmed);
+  const url = new URL(hasPath ? trimmed : `${trimmed}/internal/outcome-log`);
+  url.searchParams.set("lead", lead);
+  return url.toString();
+}
+
+async function fetchOneOutcomeLog(base: string, lead: string, token: string): Promise<OutcomeEvent[]> {
+  const res = await fetch(outcomeLogUrl(base, lead), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`${base} HTTP ${res.status}`);
+  const body = (await res.json()) as { events?: OutcomeEvent[] };
+  return Array.isArray(body.events) ? body.events : [];
+}
+
 async function fetchOutcomeLog(lead: string): Promise<OutcomeEvent[]> {
-  const base = process.env.MATCHING_ENGINE_PRIVATE_LOG_URL;
-  const token = process.env.TEE_INTERNAL_TOKEN;
-  if (!base || !token) {
+  const token = process.env.TEE_INTERNAL_TOKEN ?? "";
+  const bases = [
+    process.env.MATCHING_ENGINE_PRIVATE_LOG_URL,
+    process.env.MIRROR_OUTCOME_LOG_URL,
+  ].filter((u): u is string => Boolean(u && u.trim()));
+  if (bases.length === 0 || !token) {
     throw new Error("MATCHING_ENGINE_PRIVATE_LOG_URL / TEE_INTERNAL_TOKEN not set (and no fixture)");
   }
-  const url = `${base.replace(/\/$/, "")}/internal/outcome-log?lead=${encodeURIComponent(lead)}`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const body = (await res.json()) as { events?: OutcomeEvent[] };
-  return body.events ?? [];
+  const collected: OutcomeEvent[] = [];
+  const errors: string[] = [];
+  for (const base of bases) {
+    try {
+      collected.push(...(await fetchOneOutcomeLog(base, lead, token)));
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+  }
+  if (collected.length === 0 && errors.length === bases.length) {
+    throw new Error(errors.join("; "));
+  }
+  const seen = new Set<string>();
+  const out: OutcomeEvent[] = [];
+  for (const e of collected) {
+    const key = `${(e.lead ?? "").toLowerCase()}:${e.timestamp}:${e.pnlBps}:${e.sizePct ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(e);
+  }
+  return out;
 }

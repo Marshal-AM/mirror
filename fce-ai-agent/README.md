@@ -36,8 +36,10 @@ Simulated TEE may share on-chain `codeHash` with matching — distinguish by ext
 
 ## TEE-to-TEE outcome log
 
-The matching engine exposes `GET /internal/outcome-log` gated by `TEE_INTERNAL_TOKEN`.
-Set `MATCHING_ENGINE_PRIVATE_LOG_URL` on the AI agent. For canaries, use `SYNTHETIC_OUTCOME_FIXTURE=1`.
+The matching engine exposes `GET /internal/outcome-log` on `127.0.0.1:7702`, gated by `TEE_INTERNAL_TOKEN`.
+Set `MATCHING_ENGINE_PRIVATE_LOG_URL=http://host.docker.internal:7702` on the AI agent.
+Optional `MIRROR_OUTCOME_LOG_URL` is the Vercel `/api/outcomes` fill log.
+Canaries may still pass `fixture` or set `SYNTHETIC_OUTCOME_FIXTURE=1`. Production SCORE_V1 must not.
 
 ## Coston2 canaries
 

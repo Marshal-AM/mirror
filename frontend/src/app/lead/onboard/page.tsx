@@ -28,8 +28,13 @@ export default function LeadOnboardPage() {
       setScoreMsg("Publishing lead score…");
       try {
         const score = await ensureLeadScored(address);
-        if (score != null) setScoreMsg(`Score published: ${score}`);
-        else setScoreMsg("Registered. Score already on-chain.");
+        if (score === 0) {
+          setScoreMsg("Registered. Score stays 0 until this lead has a decrypted signal or vault fill (not a demo fixture).");
+        } else if (score != null) {
+          setScoreMsg(`Score published: ${score}`);
+        } else {
+          setScoreMsg("Registered. Score already on-chain.");
+        }
       } catch (e) {
         setScoreMsg(`Registered. Score publish failed: ${e instanceof Error ? e.message : String(e)}`);
       }

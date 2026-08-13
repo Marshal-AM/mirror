@@ -62,6 +62,11 @@ services:
       - C2_FXRP_ADDRESS=${C2_FXRP_ADDRESS:-0x0b6A3645c240605887a5532109323A3E12273dc7}
       - C2_USDT0_ADDRESS=${C2_USDT0_ADDRESS:-0xC1A5B41512496B80903D1f32d6dEa3a73212E71F}
       - EXECUTION_VENUE=${EXECUTION_VENUE:-mock-sparkdex}
+      - TEE_INTERNAL_TOKEN=${TEE_INTERNAL_TOKEN:-mirror-coston2-tee-internal}
+    ports:
+      - "127.0.0.1:${OUTCOME_LOG_BIND:-7702}:7702"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - ext-proxy
 

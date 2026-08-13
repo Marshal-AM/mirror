@@ -1,5 +1,7 @@
 import { matchingTeeProxyUrl } from "@/lib/fcc";
 import { executeMatchFromSignalTx } from "@/lib/execute-match";
+import { recordLeadOutcome } from "@/lib/outcomes";
+import { refreshLeadScore } from "@/lib/refresh-score";
 import type { Hex } from "viem";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +46,36 @@ export async function POST(req: Request) {
       proxyUrl,
       privateKey: pk.startsWith("0x") ? pk : (`0x${pk}` as Hex),
     });
-    return Response.json({ ok: true, ...result });
+    const sizePct = Number(process.env.EXECUTE_SIZE_BPS ?? "1000");
+    if (result.txs.length === 0) {
+      await recordLeadOutcome({ lead: result.lead, direction: "SELL", sizePct });
+    } else {
+      for (const fillTx of result.txs) {
+        await recordLeadOutcome({
+          lead: result.lead,
+          direction: "SELL",
+          sizePct,
+          txHash: fillTx,
+        });
+      }
+    }
+    let score: number | undefined;
+    let eventCount: number | undefined;
+    let scoreError: string | undefined;
+    try {
+      const scored = await refreshLeadScore(result.lead);
+      score = scored.score;
+      eventCount = scored.eventCount;
+    } catch (e) {
+      scoreError = e instanceof Error ? e.message : String(e);
+    }
+    return Response.json({
+      ok: true,
+      ...result,
+      score,
+      eventCount,
+      scoreError,
+    });
   } catch (e) {
     return Response.json(
       { ok: false, error: e instanceof Error ? e.message : String(e) },
