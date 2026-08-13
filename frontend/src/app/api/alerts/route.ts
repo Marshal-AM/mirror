@@ -1,7 +1,7 @@
-/**
- * In-app alert store so Vercel does not need a separate webhook process.
- * Serverless memory is best-effort (resets on cold start).
- */
+import { supabaseAdmin } from "@/lib/supabase";
+
+export const dynamic = "force-dynamic";
+
 export type MirrorAlert = {
   type: "drift" | "liquidation_risk" | "topup_executed" | "info";
   lead?: string;
@@ -11,11 +11,27 @@ export type MirrorAlert = {
   at: string;
 };
 
-const g = globalThis as typeof globalThis & { __mirrorAlerts?: MirrorAlert[] };
-if (!g.__mirrorAlerts) g.__mirrorAlerts = [];
+function fromRow(row: Record<string, unknown>): MirrorAlert {
+  return {
+    type: (row.type as MirrorAlert["type"]) ?? "info",
+    lead: typeof row.lead === "string" ? row.lead : undefined,
+    follower: typeof row.follower === "string" ? row.follower : undefined,
+    message: typeof row.message === "string" ? row.message : "",
+    meta: (row.meta as Record<string, unknown> | undefined) ?? undefined,
+    at: typeof row.at === "string" ? row.at : new Date().toISOString(),
+  };
+}
 
 export async function GET() {
-  return Response.json(g.__mirrorAlerts ?? [], {
+  const sb = supabaseAdmin();
+  if (!sb) {
+    return Response.json([], { headers: { "Cache-Control": "no-store" } });
+  }
+  const { data, error } = await sb.from("alerts").select("*").order("at", { ascending: false }).limit(50);
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+  return Response.json((data ?? []).map((r) => fromRow(r as Record<string, unknown>)).reverse(), {
     headers: { "Cache-Control": "no-store" },
   });
 }
@@ -30,7 +46,24 @@ export async function POST(req: Request) {
     meta: body.meta,
     at: body.at ?? new Date().toISOString(),
   };
-  g.__mirrorAlerts = [...(g.__mirrorAlerts ?? []), alert].slice(-50);
+  const sb = supabaseAdmin();
+  if (!sb) {
+    return Response.json(
+      { ...alert, error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY unset" },
+      { status: 503 },
+    );
+  }
+  const { error } = await sb.from("alerts").insert({
+    type: alert.type,
+    lead: alert.lead ?? null,
+    follower: alert.follower ?? null,
+    message: alert.message,
+    meta: alert.meta ?? null,
+    at: alert.at,
+  });
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
   return Response.json(alert);
 }
 

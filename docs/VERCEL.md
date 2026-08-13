@@ -102,6 +102,21 @@ EXECUTE_MATCH_PRIVATE_KEY=<same as DEPLOYER_PRIVATE_KEY>
 
 Hobby Vercel functions may time out before the TEE returns; local `npm run dev` is the reliable fill path. If those vars are unset, the signal still lands on-chain and the UI reports fill skipped.
 
+### Supabase (Discover leads + alerts)
+
+Vercel serverless memory resets on cold start. Persist the lead directory and in-app alerts in Supabase:
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. SQL Editor → paste and run [docs/supabase.sql](./supabase.sql)
+3. Settings → API: copy **Project URL** and **service_role** key (server-only)
+
+```
+SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service_role, not the anon key>
+```
+
+Do **not** prefix these with `NEXT_PUBLIC_`. Discover still backfills from the Coston2 explorer if Supabase is unset, but alerts need the DB.
+
 After Cloud Run is up ([docs/CLOUD-RUN.md](./CLOUD-RUN.md)), set:
 
 ```
