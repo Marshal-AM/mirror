@@ -148,14 +148,20 @@ log "Simulated TEE: $SIMULATED_TEE"
 # rRap, not the default rap: capital R issues the challenge as its own step, so
 # re-runs don't revert with Verification.ChallengeExpired.
 step 3 "Register TEE machine"
-go run ./cmd/register-tee \
-    -a "$ADDRESSES_FILE" \
-    -c "$CHAIN_URL" \
-    -p "$EXT_PROXY_URL" \
-    -h "${EXT_PROXY_HOST_URL:-$EXT_PROXY_URL}" \
-    -ep "$NORMAL_PROXY_URL" \
-    -state "$PROJECT_DIR/config/register-tee.state" \
-    -command "${REGISTER_TEE_COMMAND:-rRap}" \
+REGISTER_ARGS=(
+    -a "$ADDRESSES_FILE"
+    -c "$CHAIN_URL"
+    -p "$EXT_PROXY_URL"
+    -h "${EXT_PROXY_HOST_URL:-$EXT_PROXY_URL}"
+    -ep "$NORMAL_PROXY_URL"
+    -state "$PROJECT_DIR/config/register-tee.state"
+    -command "${REGISTER_TEE_COMMAND:-rRap}"
+)
+if [[ -f "$PROJECT_DIR/config/register-tee.state" ]]; then
+    log "Resuming register-tee from existing state file"
+    REGISTER_ARGS+=(--resume)
+fi
+go run ./cmd/register-tee "${REGISTER_ARGS[@]}" \
     || die "Register TEE failed"
 
 echo ""
