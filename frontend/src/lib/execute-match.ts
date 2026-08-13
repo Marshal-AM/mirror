@@ -34,8 +34,9 @@ const USDT0 = "0xC1A5B41512496B80903D1f32d6dEa3a73212E71F" as Address;
 async function fetchTeeResult(proxyUrl: string, instructionId: Hex) {
   const id = instructionId.startsWith("0x") ? instructionId : `0x${instructionId}`;
   const url = `${proxyUrl.replace(/\/$/, "")}/action/result/${id}`;
-  for (let i = 0; i < 25; i++) {
-    const res = await fetch(url, { cache: "no-store" });
+  const attempts = process.env.VERCEL ? 3 : 25;
+  for (let i = 0; i < attempts; i++) {
+    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8_000) });
     if (res.ok) {
       const body = (await res.json()) as {
         result?: { status?: number; Status?: number; data?: unknown; Data?: unknown; log?: string };

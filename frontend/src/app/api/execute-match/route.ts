@@ -1,12 +1,16 @@
-import { matchingTeeProxyUrl } from "@/lib/fcc";
-import { executeMatchFromSignalTx } from "@/lib/execute-match";
+import { fillsAfterSignalTx } from "@/lib/fill-status";
 import { recordLeadOutcome } from "@/lib/outcomes";
 import { refreshLeadScore } from "@/lib/refresh-score";
 import type { Hex } from "viem";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 15;
 
+/**
+ * Production fill does NOT run on Vercel (Hobby cannot reach the TEE tunnel).
+ * The FCC VM fill-worker watches Stage B and calls executeMatch.
+ * This route only reads MatchExecuted logs.
+ */
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { txHash?: string };
   const txHash = body.txHash;
@@ -14,50 +18,26 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "txHash required" }, { status: 400 });
   }
 
-  const proxyUrl = matchingTeeProxyUrl();
-  const pk = (process.env.EXECUTE_MATCH_PRIVATE_KEY ||
-    process.env.DEPLOYER_PRIVATE_KEY ||
-    process.env.PERSONA_DEPLOYER_PRIVATE_KEY ||
-    "") as Hex;
-  if (!proxyUrl) {
-    return Response.json(
-      {
-        ok: false,
-        skipped: true,
-        error: "MATCHING_TEE_PROXY_URL unset — signal is on-chain but fill was not run",
-      },
-      { status: 200 },
-    );
-  }
-  if (!pk || pk.length < 66) {
-    return Response.json(
-      {
-        ok: false,
-        skipped: true,
-        error: "EXECUTE_MATCH_PRIVATE_KEY unset — signal is on-chain but fill was not run",
-      },
-      { status: 200 },
-    );
-  }
-
   try {
-    const result = await executeMatchFromSignalTx({
-      txHash: txHash as Hex,
-      proxyUrl,
-      privateKey: pk.startsWith("0x") ? pk : (`0x${pk}` as Hex),
-    });
+    const result = await fillsAfterSignalTx(txHash as Hex);
+    if (result.fills === 0) {
+      return Response.json({
+        ok: true,
+        pending: true,
+        fills: 0,
+        txs: [],
+        lead: result.lead,
+      });
+    }
+
     const sizePct = Number(process.env.EXECUTE_SIZE_BPS ?? "1000");
-    if (result.txs.length === 0) {
-      await recordLeadOutcome({ lead: result.lead, direction: "SELL", sizePct });
-    } else {
-      for (const fillTx of result.txs) {
-        await recordLeadOutcome({
-          lead: result.lead,
-          direction: "SELL",
-          sizePct,
-          txHash: fillTx,
-        });
-      }
+    for (const fillTx of result.txs) {
+      await recordLeadOutcome({
+        lead: result.lead,
+        direction: "SELL",
+        sizePct,
+        txHash: fillTx,
+      }).catch(() => undefined);
     }
     let score: number | undefined;
     let eventCount: number | undefined;
@@ -72,6 +52,7 @@ export async function POST(req: Request) {
     return Response.json({
       ok: true,
       ...result,
+      pending: false,
       score,
       eventCount,
       scoreError,

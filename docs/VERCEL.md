@@ -91,16 +91,16 @@ NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY=0x04cd7b8ab05d946fb034293b3737ae1c312972f6ce55450
 
 After changing any `NEXT_PUBLIC_*` var you **must Redeploy** (they are baked at build).
 
-For **Encrypt & submit → vault fill** (server-only, not `NEXT_PUBLIC_`):
+For **Encrypt & submit** the browser uses `NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` (baked at build). **Vault fill does not run on Vercel** — Hobby cannot reach the matching TEE tunnel. The FCC VM fill-worker watches Stage B and calls `executeMatch`. Vercel `/api/execute-match` only reads `MatchExecuted` logs.
+
+On the VM (do not restart `extension-tee`):
 
 ```
-MATCHING_TEE_PROXY_URL=https://type-sullivan-valve-beer.trycloudflare.com
-EXECUTE_MATCH_PRIVATE_KEY=<same as DEPLOYER_PRIVATE_KEY>
+cd ~/mirror && git pull
+bash scripts/start-fill-worker.sh
 ```
 
-`MATCHING_TEE_PROXY_URL` is the matching `EXT_PROXY_URL` on the VM — **not** `tunnel-ai` / `personnel-spouse-promote-minor`. trycloudflare URLs are often unreachable from Vercel, so the baked secp256k1 `NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` must still be correct.
-
-Hobby Vercel functions may time out before the TEE returns; local `npm run dev` is the reliable fill path. If those vars are unset, the signal still lands on-chain and the UI reports fill skipped.
+Keep `NEXT_PUBLIC_TEE_ENCRYPT_PUBKEY` in sync with matching `/info` after any TEE recreate. `MATCHING_TEE_PROXY_URL` / `EXECUTE_MATCH_PRIVATE_KEY` are optional on Vercel now.
 
 For **live scoring** (same token as both FCEs on the VM):
 
@@ -164,7 +164,7 @@ You still need **MetaMask + faucet funds**. You do **not** need `npm run dev`, m
 7. **Lead:** `/signal` — encrypt, submit, and fill follower vault FXRP→USDT0  
 8. **Follower:** `/portfolio` then `/withdraw`  
 
-Requires matching TEE + `MATCHING_TEE_PROXY_URL` (current matching tunnel, not `tunnel-ai`) and `EXECUTE_MATCH_PRIVATE_KEY`. Followers must already have vault FXRP.
+Requires the matching TEE in production, the VM fill-worker (`scripts/start-fill-worker.sh`), and follower vault FXRP. Encrypt uses the baked secp256k1 pubkey.
 
 ---
 

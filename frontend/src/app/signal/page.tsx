@@ -65,15 +65,10 @@ export default function SignalPage() {
         args: [encrypted],
         value: FCC_INSTRUCTION_FEE_WEI,
       });
-      setStatus(`On-chain ${tx}. Waiting for TEE decrypt + vault fill…`);
-      const fillRes = await fetch("/api/execute-match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ txHash: tx }),
-      });
-      const fill = (await fillRes.json()) as {
+      setStatus(`On-chain ${tx}. Waiting for matching VM to decrypt + fill…`);
+      type FillBody = {
         ok?: boolean;
-        skipped?: boolean;
+        pending?: boolean;
         error?: string;
         fills?: number;
         txs?: string[];
@@ -81,7 +76,25 @@ export default function SignalPage() {
         eventCount?: number;
         scoreError?: string;
       };
-      if (fill.ok) {
+      let fill: FillBody = {};
+      for (let i = 0; i < 45; i++) {
+        const fillRes = await fetch("/api/execute-match", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ txHash: tx }),
+        });
+        const raw = await fillRes.text();
+        try {
+          fill = JSON.parse(raw) as FillBody;
+        } catch {
+          throw new Error(`Fill status HTTP ${fillRes.status}: ${raw.slice(0, 160)}`);
+        }
+        if (!fill.ok) throw new Error(fill.error || "execute-match failed");
+        if (!fill.pending && (fill.fills ?? 0) > 0) break;
+        setStatus(`On-chain ${tx}. Fill worker attempt ${i + 1}/45…`);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      if (fill.ok && (fill.fills ?? 0) > 0) {
         setFillTxs(fill.txs ?? []);
         const scoreBit =
           typeof fill.score === "number"
@@ -89,15 +102,11 @@ export default function SignalPage() {
             : fill.scoreError
               ? ` Score update failed: ${fill.scoreError}`
               : "";
-        setStatus(
-          (fill.fills
-            ? `Filled ${fill.fills} follower vault swap(s) on MockSparkDexRouter.`
-            : "TEE decrypted; no vault FXRP to sell.") + scoreBit,
-        );
-      } else if (fill.skipped) {
-        setStatus(`Signal confirmed ${tx}. Fill skipped: ${fill.error}`);
+        setStatus(`Filled ${fill.fills} follower vault swap(s) on MockSparkDexRouter.` + scoreBit);
       } else {
-        throw new Error(fill.error || "execute-match failed");
+        setStatus(
+          `Signal confirmed ${tx}. No MatchExecuted yet — matching VM fill-worker may be down, or this lead has no follower vault FXRP.`,
+        );
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -112,10 +121,10 @@ export default function SignalPage() {
     <section className="section form-panel">
       <h2>Encrypted signal</h2>
       <p>
-        Encrypts in-browser to the <strong>matching</strong> TEE, submits{" "}
-        <code>MATCH_V1</code> on Coston2, then this app calls <code>executeMatch</code> so
-        follower vault FXRP sells into USDT0 on MockSparkDexRouter (SparkDEX V3 ABI; the
-        published SparkDEX router has no bytecode on chain 114).
+        Encrypts in-browser to the <strong>matching</strong> TEE and submits{" "}
+        <code>MATCH_V1</code> on Coston2. The FCC VM fill-worker decrypts and calls{" "}
+        <code>executeMatch</code> so follower vault FXRP sells into USDT0. This page
+        waits on that on-chain fill.
       </p>
       {!isConnected && <p className="muted">Connect as lead to submit.</p>}
       <label>

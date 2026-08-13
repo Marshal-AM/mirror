@@ -35,6 +35,11 @@ const SENDER_ABI = parseAbi([
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 dotenv.config({ path: join(ROOT, ".env") });
+dotenv.config({ path: join(ROOT, "fce-matching-engine/.env") });
+process.env.DEPLOYER_PRIVATE_KEY =
+  process.env.DEPLOYER_PRIVATE_KEY ??
+  process.env.DEPLOYMENT_PRIVATE_KEY ??
+  process.env.PERSONA_DEPLOYER_PRIVATE_KEY;
 
 const SEND_SELECTOR = slice(keccak256(toHex(stringToBytes("sendMirrorMatchStageB(bytes)"))), 0, 4);
 const DIAMOND = "0x1a9C4A0f9D76c0b1D91d22E24E573a9b377618aE" as Address;
@@ -103,8 +108,10 @@ async function main() {
   const registry = getAddress(cfg.contracts.mirrorRegistry) as Address;
   const fxrp = getAddress(cfg.tokens.fxrp) as Address;
   const usdt0 = getAddress(cfg.tokens.usdt0) as Address;
-  const proxyUrl = (process.env.EXT_PROXY_URL ?? "").replace(/\/$/, "");
-  if (!proxyUrl) throw new Error("Set EXT_PROXY_URL to the FCC tunnel (proxy /info URL origin)");
+  const proxyUrl = (process.env.EXT_PROXY_URL || process.env.MATCHING_TEE_PROXY_URL || "http://127.0.0.1:6674").replace(
+    /\/$/,
+    "",
+  );
 
   const router = (await publicClient.readContract({
     address: sender,
@@ -244,8 +251,11 @@ async function main() {
     return;
   }
 
-  console.log(`watching ${sender} for sendMirrorMatchStageB (executor ${account.address})`);
-  let lastBlock = await publicClient.getBlockNumber();
+  console.log(`watching ${sender} for sendMirrorMatchStageB (executor ${account.address}) proxy=${proxyUrl}`);
+  const head0 = await publicClient.getBlockNumber();
+  const lookback = BigInt(process.env.FILL_LOOKBACK_BLOCKS ?? "400");
+  let lastBlock = head0 > lookback ? head0 - lookback : 0n;
+  console.log(`scan from block ${lastBlock} to ${head0}`);
   for (;;) {
     const head = await publicClient.getBlockNumber();
     if (head > lastBlock) {
