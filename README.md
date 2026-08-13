@@ -1,4 +1,4 @@
-# Mirror
+# Mirror 
 
 Private copy trading on Flare, powered by FCC (Flare Confidential Compute).
 
