@@ -33,13 +33,21 @@ function plainLanguageSummary(strategy: string, pnl: number, score: number): str
   return `${strategy} lead — ${dir}; score ${score}/100 (rule-based composite).`;
 }
 
+type SettledFromProofLog = {
+  args: {
+    follower?: `0x${string}`;
+    lead?: `0x${string}`;
+    delta?: bigint;
+  };
+};
+
 async function getSettledLogsChunked(
   client: PublicClient,
   follower: `0x${string}`,
   fromBlock: bigint,
   toBlock: bigint,
-) {
-  const logs: Awaited<ReturnType<typeof client.getContractEvents>> = [];
+): Promise<SettledFromProofLog[]> {
+  const logs: SettledFromProofLog[] = [];
   let to = toBlock;
   while (to >= fromBlock) {
     const spanStart = to + 1n > RPC_LOG_BLOCK_LIMIT ? to + 1n - RPC_LOG_BLOCK_LIMIT : 0n;
@@ -52,7 +60,7 @@ async function getSettledLogsChunked(
       fromBlock: from,
       toBlock: to,
     });
-    logs.push(...chunk);
+    logs.push(...(chunk as unknown as SettledFromProofLog[]));
     if (from === fromBlock) break;
     to = from - 1n;
   }

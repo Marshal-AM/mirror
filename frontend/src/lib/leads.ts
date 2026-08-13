@@ -53,7 +53,8 @@ async function recentRegisteredLeads(client: PublicClient): Promise<string[]> {
         toBlock: to,
       });
       for (const log of logs) {
-        if (log.args.wallet) found.push(log.args.wallet);
+        const wallet = (log as { args?: { wallet?: `0x${string}` } }).args?.wallet;
+        if (wallet) found.push(wallet);
       }
       if (from === fromBlock) break;
       to = from - 1n;
