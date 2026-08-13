@@ -19,11 +19,16 @@ import { loadLeadOutcomes, scoringEvents } from "../lib/outcome-store.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 dotenv.config({ path: join(ROOT, ".env") });
+dotenv.config({ path: join(ROOT, "fce-matching-engine/.env") });
 dotenv.config({ path: join(ROOT, "fce-ai-agent/.env") });
+function nonemptyKey(name: string): string {
+  const v = (process.env[name] ?? "").trim().replace(/^["']|["']$/g, "");
+  return v.length >= 64 ? v : "";
+}
 process.env.DEPLOYER_PRIVATE_KEY =
-  process.env.DEPLOYER_PRIVATE_KEY ??
-  process.env.DEPLOYMENT_PRIVATE_KEY ??
-  process.env.PERSONA_DEPLOYER_PRIVATE_KEY;
+  nonemptyKey("DEPLOYER_PRIVATE_KEY") ||
+  nonemptyKey("DEPLOYMENT_PRIVATE_KEY") ||
+  nonemptyKey("PERSONA_DEPLOYER_PRIVATE_KEY");
 process.env.FLARE_RPC_URL = process.env.FLARE_RPC_URL ?? process.env.CHAIN_URL;
 
 const FEE = 1_000_000n;
