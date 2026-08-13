@@ -39,11 +39,15 @@ async function fetchTeeResult(proxyUrl: string, instructionId: Hex) {
     if (res.ok) {
       const body = (await res.json()) as {
         result?: { status?: number; Status?: number; data?: unknown; Data?: unknown; log?: string };
-        Result?: { status?: number };
+        Result?: { status?: number; Status?: number; data?: unknown; Data?: unknown };
+        status?: number;
+        Status?: number;
+        data?: unknown;
+        Data?: unknown;
       };
-      const result = body.result ?? body.Result ?? (body as { status?: number; data?: unknown });
+      const result = body.result ?? body.Result ?? body;
       const status = result.status ?? result.Status;
-      const data = "data" in result ? result.data : (result as { Data?: unknown }).Data;
+      const data = result.data ?? result.Data;
       if (status === 1) return { status, data };
       if (status === 0) {
         throw new Error(`TEE status 0: ${JSON.stringify(result)}`);

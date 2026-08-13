@@ -35,6 +35,13 @@ function bytesToHex(bytes: Uint8Array): `0x${string}` {
     .join("")}`;
 }
 
+/** Copy into an ArrayBuffer-backed view so WebCrypto accepts it under TS 5.7+ DOM libs. */
+function asCryptoBuffer(data: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(data.byteLength);
+  copy.set(data);
+  return copy.buffer;
+}
+
 function concatBytes(...parts: Uint8Array[]): Uint8Array {
   const len = parts.reduce((n, p) => n + p.length, 0);
   const out = new Uint8Array(len);
@@ -67,7 +74,7 @@ export function parseTeeEncryptPubKey(pubKey: string): Uint8Array {
 }
 
 async function sha256(data: Uint8Array): Promise<Uint8Array> {
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", data));
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", asCryptoBuffer(data)));
 }
 
 /** NIST SP 800-56 concatKDF as used by go-ethereum crypto/ecies. */
@@ -88,14 +95,24 @@ async function concatKdf(z: Uint8Array, kdLen: number): Promise<Uint8Array> {
 }
 
 async function aes128Ctr(key: Uint8Array, iv: Uint8Array, plain: Uint8Array): Promise<Uint8Array> {
-  const cryptoKey = await crypto.subtle.importKey("raw", key, "AES-CTR", false, ["encrypt"]);
-  const ct = await crypto.subtle.encrypt({ name: "AES-CTR", counter: iv, length: 128 }, cryptoKey, plain);
+  const cryptoKey = await crypto.subtle.importKey("raw", asCryptoBuffer(key), "AES-CTR", false, ["encrypt"]);
+  const ct = await crypto.subtle.encrypt(
+    { name: "AES-CTR", counter: asCryptoBuffer(iv), length: 128 },
+    cryptoKey,
+    asCryptoBuffer(plain),
+  );
   return new Uint8Array(ct);
 }
 
 async function hmacSha256(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
-  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const mac = await crypto.subtle.sign("HMAC", cryptoKey, data);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    asCryptoBuffer(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign("HMAC", cryptoKey, asCryptoBuffer(data));
   return new Uint8Array(mac);
 }
 
