@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+typescript/node_modules
+typescript/dist
+config/extension.env
+config/**/*.log
+config/register-tee.state
+config/proxy/extension_proxy.coston2.docker.toml
+out/
+cache/

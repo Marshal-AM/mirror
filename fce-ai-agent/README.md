@@ -21,6 +21,19 @@ EXTENSION_PORT=8200 SYNTHETIC_OUTCOME_FIXTURE=1 npm start
 
 Op commands: `MIRROR` / `SCORE_V1` (distinct from matching-engine `MATCH_V1` / `TOPUP_V1`).
 
+## Live FCC (Coston2, same VM as matching)
+
+Second enclave: own `AiAgentSender`, own extension id, ports **6683/6684**, compose project `tunnel-ai`. Do not stop the matching TEE.
+
+Operator copy-paste: [VM-BRINGUP.md](./VM-BRINGUP.md).
+
+```bash
+# after VM bring-up
+AI_AGENT_SENDER=0x... AI_EXT_PROXY_URL=https://... npm run ai:score-v1-tee
+```
+
+Simulated TEE may share on-chain `codeHash` with matching — distinguish by extension id / sender / SCORE_V1.
+
 ## TEE-to-TEE outcome log
 
 The matching engine exposes `GET /internal/outcome-log` gated by `TEE_INTERNAL_TOKEN`.

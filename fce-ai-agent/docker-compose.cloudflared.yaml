@@ -1,0 +1,9 @@
+# Isolated quick tunnel for the AI-agent ext-proxy (host :6684).
+# MUST stay name: tunnel-ai — matching-engine uses name: tunnel on :6674.
+name: tunnel-ai
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate ${TUNNEL_ARGS:---url ${TUNNEL_TARGET:-http://host.docker.internal:6684}}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

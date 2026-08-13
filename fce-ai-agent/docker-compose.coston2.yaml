@@ -1,0 +1,18 @@
+# Coston2 overlay for the AI-agent FCE. No matching-engine Stage B env.
+services:
+  ext-proxy:
+    volumes:
+      - ./config/proxy/extension_proxy.coston2.docker.toml:/app/config/config.toml:ro
+
+  extension-tee:
+    environment:
+      - CHAIN_URL=${CHAIN_URL:-https://coston2-api.flare.network/ext/C/rpc}
+      - CHAIN_ID=${CHAIN_ID:-114}
+      - SYNTHETIC_OUTCOME_FIXTURE=${SYNTHETIC_OUTCOME_FIXTURE:-1}
+      - MATCHING_ENGINE_PRIVATE_LOG_URL=${MATCHING_ENGINE_PRIVATE_LOG_URL:-}
+      - TEE_INTERNAL_TOKEN=${TEE_INTERNAL_TOKEN:-}
+
+networks:
+  default:
+    name: ${COMPOSE_NETWORK:-extension-scaffold-ai-agent}
+    external: false
