@@ -285,7 +285,7 @@ Only pursue if the demo needs at least one **real external DEX transaction** for
 
 **Deliverables**
 
-- Home/discovery screen: leaderboard sorted by AI Score, filterable by risk profile/strategy type, reading live from `MirrorLeaderboard`
+- Home/discovery screen: leaderboard sorted by rule-based composite score, filterable by risk profile/strategy type, reading live from `MirrorLeaderboard`
 - Lead onboarding: wallet connect → `MirrorRegistry.register()` → display TEE public key for client-side signal encryption
 - Signal submission form: asset selector, direction, size-pct slider; encrypts client-side (Web Crypto against the FCE public key) before ever leaving the browser
 - Follower onboarding: wallet connect → risk profile → deposit FXRP into `MirrorVault` → browse leaderboard → follow

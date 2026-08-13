@@ -183,16 +183,16 @@ async function main() {
     if (!ok) throw new Error("fee/vault missing");
   }
 
-  // 6) AI score canary slice
+  // 6) Lead-score canary slice
   if (skipOnchain) {
-    console.log("· AI score canary SKIPPED (DEMO_SKIP_ONCHAIN=1)");
-    results.push({ step: "6 AI score canary", ok: true, ms: 0, detail: "skipped" });
+    console.log("· lead-score canary SKIPPED (DEMO_SKIP_ONCHAIN=1)");
+    results.push({ step: "6 lead-score canary", ok: true, ms: 0, detail: "skipped" });
   } else {
-    console.log("… AI score canary…");
+    console.log("… lead-score canary…");
     const r = await runNpmScript("ai:score-canary", 10 * 60_000);
-    results.push({ step: "6 AI score canary", ok: r.ok, ms: r.ms, detail: r.note });
-    console.log(r.ok ? `✓ AI score (${r.ms}ms)` : `✗ AI score: ${r.note}`);
-    if (!r.ok) throw new Error("AI score canary failed");
+    results.push({ step: "6 lead-score canary", ok: r.ok, ms: r.ms, detail: r.note });
+    console.log(r.ok ? `✓ lead score (${r.ms}ms)` : `✗ lead score: ${r.note}`);
+    if (!r.ok) throw new Error("lead-score canary failed");
   }
 
   // 7) Follower withdrawal request — portfolio/withdraw is UI; assert vault address

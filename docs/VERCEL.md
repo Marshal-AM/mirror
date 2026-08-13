@@ -116,7 +116,7 @@ You still need **MetaMask + faucet funds**. You do **not** need `npm run dev`, m
 3. Import **lead-trader-1** and **follower-evm-1** (keys from local `.env` only)  
 4. **Lead:** `/lead/onboard` → Register  
 5. **Follower:** `/follower/onboard` → lead address `0x03182be182be76F11D1d136574190708844aE079`, deposit e.g. `10` FXRP (6 decimals — type `10`, not a tiny fraction)  
-6. `/portfolio` — balance + AI scores (canary already published scores)  
+6. `/portfolio` — balance + rule-based lead scores  
 7. **Lead:** `/signal` — encrypt, submit, and fill follower vault FXRP→USDT0  
 8. **Follower:** `/portfolio` then `/withdraw`  
 
@@ -131,7 +131,7 @@ Requires matching TEE + `MATCHING_TEE_PROXY_URL` (current matching tunnel, not `
 | Live XRPL stepper tracking | Run `npm run xrpl:monitor` on a VPS/Railway, set `NEXT_PUBLIC_XRPL_MONITOR_URL` to that HTTPS URL, redeploy |
 | TEE matching of signals | `fce-matching-engine` Docker / FCC register (see `fce-matching-engine/README`) |
 | FDC 10-cycle settlement | Local: `npm run fdc:cycle` (uses `.env` FDC key + deployer gas) |
-| AI score refresh | Local: `npm run ai:score-canary` |
+| Lead score refresh | Automatic on Discover / lead register (`SCORE_V1` + `updateScore`) |
 
 ---
 

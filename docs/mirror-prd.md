@@ -198,7 +198,7 @@ Request withdrawal through the web app → FXRP is redeemed via FAssets → XRP 
 The AI agent's outputs surface in the Mirror UI in three places:
 
 **Leaderboard:**  
-Leads are ranked by a composite AI Score (0–100) displayed alongside raw return figures. The score weights: 40% risk-adjusted return (Sharpe equivalent), 25% max drawdown, 20% strategy consistency, 15% attested data completeness. Each lead card shows the plain-language strategy classification, top 3 matched follower risk profiles, and a data confidence indicator (Low / Medium / High based on data history length and FDC attestation coverage).
+Leads are ranked by a composite score (0–100, rule-based — not an LLM) displayed alongside raw return figures. The score weights: 40% risk-adjusted return (Sharpe equivalent), 25% max drawdown, 20% strategy consistency, 15% attested data completeness. Each lead card shows the plain-language strategy classification, top 3 matched follower risk profiles, and a data confidence indicator (Low / Medium / High based on data history length and FDC attestation coverage).
 
 **Your portfolio panel:**  
 Followers see each active lead they are copying with: current position summary, epoch P&L, AI health status (Healthy / Drift Detected / Liquidation Risk), and a one-line agent rationale for their last signal ("Lead executed a FXRP → USDT0 swap consistent with mean-reversion entry at price support"). No strategy specifics are disclosed — only classification-level language.
@@ -248,7 +248,7 @@ For the bounty submission record:
 ### 10.1 Web application
 
 **Home / discovery screen:**  
-Clean leaderboard of lead traders sortable by AI Score, raw return, drawdown, AUM under management, and strategy type. Each card shows: anonymised lead handle, strategy type badge (momentum / yield-arb / CDP / mean-rev), 30-day return, AI Score, and AUM. Filter controls: risk profile match, minimum track record, minimum data confidence.
+Clean leaderboard of lead traders sortable by composite score, raw return, drawdown, AUM under management, and strategy type. Each card shows: anonymised lead handle, strategy type badge (momentum / yield-arb / CDP / mean-rev), 30-day return, composite score, and AUM. Filter controls: risk profile match, minimum track record, minimum data confidence.
 
 **Lead profile page:**  
 Detailed view of a single lead with: performance chart (epoch-by-epoch returns, plotted against FXRP price for context), drawdown history, strategy consistency timeline, AI agent commentary (plain language, updated each epoch), and attested data sources (FDC Web2Json attestation IDs for external data). Prominent "Follow" CTA with allocation input.
@@ -299,7 +299,7 @@ The bounty asks for: what runs privately inside the TEE, what is verified onchai
 
 **What runs privately:** The lead's trade intent, the matching computation, per-follower order sizing, and the AI agent's performance analysis.
 
-**What is verified onchain:** Execution outcome (FDC EVMTransaction), AI scores (FDC-attested inputs), follower balance deltas, fee accrual.
+**What is verified onchain:** Execution outcome (FDC EVMTransaction), composite lead scores (FDC-attested inputs), follower balance deltas, fee accrual.
 
 **Trust assumptions:** TEE hardware attestation (Google Confidential Compute / AMD SEV), identical to FCC's own baseline. Data provider consensus for instruction relaying, inheriting Flare's full economic security.
 

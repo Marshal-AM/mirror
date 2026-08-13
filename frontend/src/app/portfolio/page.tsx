@@ -30,7 +30,7 @@ const FXRP_DECIMALS = 6;
 function plainLanguageSummary(strategy: string, pnl: number, score: number): string {
   const dir =
     pnl > 0 ? "ahead on epoch P&L" : pnl < 0 ? "behind on epoch P&L" : "flat on epoch P&L";
-  return `${strategy} lead — ${dir}; AI score ${score}/100 (classification-level only).`;
+  return `${strategy} lead — ${dir}; score ${score}/100 (rule-based composite).`;
 }
 
 async function getSettledLogsChunked(
@@ -190,7 +190,7 @@ export default function PortfolioPage() {
               <th>Lead</th>
               <th>Strategy</th>
               <th>Health</th>
-              <th>AI Score</th>
+              <th>Score</th>
               <th>Balance</th>
               <th>Epoch P&L</th>
               <th>Pending out</th>

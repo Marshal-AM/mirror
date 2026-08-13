@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePublicClient } from "wagmi";
 import { STRATEGY_LABELS, RISK_LABELS } from "@/lib/config";
 import { loadDiscoverLeads, type DiscoverLead } from "@/lib/leads";
+import { ensureLeadScored } from "@/lib/ensure-score";
 
 export default function DiscoverPage() {
   const client = usePublicClient();
@@ -13,6 +14,7 @@ export default function DiscoverPage() {
   const [riskFilter, setRiskFilter] = useState<string>("all");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [scoringNote, setScoringNote] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -22,7 +24,24 @@ export default function DiscoverPage() {
       setError("");
       try {
         const next = await loadDiscoverLeads(client);
-        if (!cancelled) setRows(next);
+        if (cancelled) return;
+        setRows(next);
+        const unscored = next.filter((r) => r.score === 0);
+        if (unscored.length === 0) return;
+        setScoringNote("Publishing lead scores…");
+        for (const row of unscored) {
+          if (cancelled) return;
+          try {
+            const score = await ensureLeadScored(row.address);
+            if (score == null || cancelled) continue;
+            setRows((prev) =>
+              prev.map((r) => (r.address === row.address ? { ...r, score } : r)),
+            );
+          } catch (e) {
+            if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+          }
+        }
+        if (!cancelled) setScoringNote("");
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -57,7 +76,7 @@ export default function DiscoverPage() {
           <p className="hero-brand">Mirror</p>
           <h1>Copy leads you can measure.</h1>
           <p>
-            Live AI scores on Coston2. Encrypted signals. Follow with FXRP — without handing over your
+            Rule-based lead scores on Coston2. Encrypted signals. Follow with FXRP — without handing over your
             edge in the clear.
           </p>
           <div className="hero-cta">
@@ -73,7 +92,11 @@ export default function DiscoverPage() {
 
       <section className="section" id="discover">
         <h2>Discovery</h2>
-        <p>Registered leads on Coston2. Click Follow to deposit FXRP and copy that lead.</p>
+        <p>
+          Registered leads on Coston2. Scores are a rule-based composite (Sharpe, drawdown,
+          consistency, completeness) published automatically. Click Follow to deposit FXRP and copy
+          that lead.
+        </p>
         <div className="filters">
           <label>
             Strategy
@@ -99,6 +122,7 @@ export default function DiscoverPage() {
           </label>
         </div>
         {loading && <p className="muted">Loading Coston2 leaderboard…</p>}
+        {scoringNote && <p className="muted">{scoringNote}</p>}
         {error && <p className="err">{error}</p>}
         {!loading && !error && filtered.length === 0 && (
           <p className="muted">No registered leads yet. Register as a lead first.</p>
@@ -108,7 +132,7 @@ export default function DiscoverPage() {
             <thead>
               <tr>
                 <th>Lead</th>
-                <th>AI Score</th>
+                <th>Score</th>
                 <th>Strategy</th>
                 <th>Fee</th>
                 <th></th>

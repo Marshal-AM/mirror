@@ -1,7 +1,7 @@
 /**
  * Performance scoring for Mirror AI Agent FCE.
  *
- * Composite AI Score (0–100) weights (PRD §7):
+ * Composite lead score (0–100), rule-based weights (PRD §7):
  *   40% Sharpe-equivalent, 25% max drawdown, 20% consistency, 15% data completeness.
  *
  * Sharpe annualization: daily returns use √365. For unequal bars, treat each
@@ -22,7 +22,7 @@ export type ScoreBreakdown = {
   maxDrawdown: number; // 0–1 fraction of peak
   consistency: number; // 0–1
   dataCompleteness: number; // 0–1
-  aiScore: number; // 0–100 integer
+  aiScore: number; // 0–100 integer (legacy field name; rule-based composite, not an LLM)
 };
 
 const WEIGHT_SHARPE = 0.4;

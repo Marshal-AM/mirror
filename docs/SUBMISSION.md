@@ -40,7 +40,7 @@ Local smoke with `FCE_PLAINTEXT_DECRYPT_FALLBACK=1` is **out of scope** for the 
 | Proof | Command / artifact |
 |-------|-------------------|
 | FDC settlement cycles | `npm run fdc:cycle` |
-| AI scores + Web2Json attestation | `npm run ai:score-canary` |
+| Rule-based lead scores + Web2Json attestation | `npm run ai:score-canary` |
 | Leaderboard ACL / vault settlement | `npm run test` (Hardhat) — leaderboard + vault suites |
 | FSA Payment attestation path | `npm run fsa:canary` |
 

@@ -7,6 +7,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { config, STRATEGY_LABELS, FXRP_DECIMALS } from "@/lib/config";
 import { registryAbi } from "@/lib/abis";
 import { announceLead } from "@/lib/leads";
+import { ensureLeadScored } from "@/lib/ensure-score";
 
 export default function LeadOnboardPage() {
   const { address, isConnected } = useAccount();
@@ -18,8 +19,21 @@ export default function LeadOnboardPage() {
 
   const teeHash = keccak256(toBytes(config.teeEncryptPubKey || "mirror-tee-placeholder"));
 
+  const [scoreMsg, setScoreMsg] = useState("");
+
   useEffect(() => {
-    if (isSuccess && address) void announceLead(address);
+    if (!isSuccess || !address) return;
+    void (async () => {
+      await announceLead(address);
+      setScoreMsg("Publishing lead score…");
+      try {
+        const score = await ensureLeadScored(address);
+        if (score != null) setScoreMsg(`Score published: ${score}`);
+        else setScoreMsg("Registered. Score already on-chain.");
+      } catch (e) {
+        setScoreMsg(`Registered. Score publish failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    })();
   }, [isSuccess, address]);
 
   function submit() {
@@ -79,6 +93,7 @@ export default function LeadOnboardPage() {
           <Link href="/#discover">Discover</Link>.
         </p>
       )}
+      {scoreMsg && <p className={scoreMsg.includes("failed") ? "err" : "ok"}>{scoreMsg}</p>}
       {error && <p className="err">{error.message}</p>}
     </section>
   );

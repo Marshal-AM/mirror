@@ -25,7 +25,7 @@ describe("sharpeEquivalent", () => {
     expect(Math.abs(sharpe - expected)).toBeLessThan(1e-9);
   });
 
-  it("maps known series into AI score band for high-Sharpe lead", () => {
+  it("maps known series into composite score band for high-Sharpe lead", () => {
     const lead = "0x0000000000000000000000000000000000000001";
     const events = syntheticMomentumLead(lead);
     const score = scoreLead(events, 1_700_000_000 + 86400);

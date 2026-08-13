@@ -20,7 +20,7 @@ async function main() {
   console.log(`verifier: ${verifier}`);
   console.log(`api key:  ${key.slice(0, 8)}…${key.slice(-4)}`);
 
-  // 1) Web2Json prepare (Phase 6 AI scores)
+  // 1) Web2Json prepare (Phase 6 lead scores)
   const w2j = await prepareWeb2JsonRequest({
     url: `${(process.env.DEFILLAMA_API_BASE || "https://api.llama.fi").replace(/\/$/, "")}/v2/historicalChainTvl/Flare`,
     postProcessJq: ".|length",

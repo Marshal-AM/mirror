@@ -7,6 +7,7 @@ import { parseUnits } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { config, STRATEGY_LABELS, FXRP_DECIMALS, RISK_LABELS } from "@/lib/config";
 import { leaderboardAbi, registryAbi, vaultAbi, erc20Abi } from "@/lib/abis";
+import { ensureLeadScored } from "@/lib/ensure-score";
 
 export default function LeadProfilePage() {
   const params = useParams<{ address: string }>();
@@ -51,8 +52,18 @@ export default function LeadProfilePage() {
           });
           setScore(Number(s.score));
           setAttestationId(s.attestationId);
+          if (Number(s.score) === 0) {
+            const next = await ensureLeadScored(lead);
+            if (next != null) setScore(next);
+          }
         } catch {
           setScore(0);
+          try {
+            const next = await ensureLeadScored(lead);
+            if (next != null) setScore(next);
+          } catch {
+            /* keep 0 if SCORE_V1 is down */
+          }
         }
         if (address) {
           const alloc = await client.readContract({

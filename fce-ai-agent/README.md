@@ -2,7 +2,7 @@
 
 Independently code-hashed Flare Compute Extension for:
 
-- Performance scoring (Sharpe-equivalent, max drawdown, consistency → AI Score 0–100)
+- Performance scoring (Sharpe-equivalent, max drawdown, consistency → composite score 0–100; rule-based, not an LLM)
 - Strategy classification (`momentum` | `mean-reversion` | `yield-arb`)
 - Drift detection vs registered `strategyType` baseline (`DRIFT_CONFIDENCE_THRESHOLD`, default 0.55)
 - Position health vs MockKinetic + FTSO-informed alert line (`LIQUIDATION_ALERT_BPS`)

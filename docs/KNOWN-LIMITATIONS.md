@@ -8,7 +8,7 @@ This document lists venues and features explicitly deferred or mocked on Coston2
 |-----------------|--------|--------|
 | **SparkDEX spot V3** | Interface-live mock (Phase 4A) | Published `SwapRouter` `0x8a1E…2781` still has **no bytecode** on Coston2 (re-verified 2026-08-13). Execution uses `MockSparkDexRouter` `0x6F3A431c74Ef7Ff30ed93569D4e8A43466E7F9e1` — same `exactInputSingle` ABI, real ERC20 transfers at live FTSO prices. Wire with `npm run tee:wire-execution`; fill TEE results with `npm run tee:execute-match`. |
 | **BlazeSwap FXRP/USDT0** | Self-seeded test liquidity (Phase 4B) | Pair `0xa0B211953a3d8f42E82AfB01303933DdA5c434fe` created/funded by `scripts/venues/seed-blazeswap-pool.ts`. This is **not** third-party depth — the deployer is the LP. BlazeSwap `addLiquidity` uses extra `feeBipsA/feeBipsB` args (not Uniswap V2). Default `EXECUTION_VENUE` remains `mock-sparkdex`. |
-| **AI agent TEE-to-TEE channel** | Partial (Phase 6) | Matching engine `GET /internal/outcome-log` gated by `TEE_INTERNAL_TOKEN`. Live AI FCC stack is `fce-ai-agent` (ports 6683/6684, `tunnel-ai`, `AiAgentSender`, `SCORE_V1`) — see `fce-ai-agent/VM-BRINGUP.md`. Synthetic fixture canaries do not need the private log. Full enclave-to-enclave outcome channel still optional. |
+| **Scoring FCE TEE-to-TEE channel** | Partial (Phase 6) | Matching engine `GET /internal/outcome-log` gated by `TEE_INTERNAL_TOKEN`. Live scoring FCC stack is `fce-ai-agent` (ports 6683/6684, `tunnel-ai`, `AiAgentSender`, `SCORE_V1`) — see `fce-ai-agent/VM-BRINGUP.md`. Scores are rule-based (Sharpe/drawdown/consistency/completeness), not an LLM. Synthetic fixture canaries do not need the private log. Full enclave-to-enclave outcome channel still optional. |
 | **Simulated TEE codeHash** | May collide | With `SIMULATED_TEE=true`, matching and AI `/info` codeHash often share the FCC test hash (`0x194844cf…`). Distinguish FCEs by extension id (≠ 66187), `AiAgentSender` (≠ `0xf082…`), image/container, and op command. Do not claim on-chain hashes differ if `/info` matches. |
 | **Web2Json dual-attestation canary** | Derived 2nd id | `ai:score-canary` uses one live Web2Json DA proof; lead2 `attestationId = keccak256(attBase, lead)`. Second full FDC round optional for demos. |
 | **FSA XRPL path** | Live (Phase 8) | `MasterAccountController` + FDC Payment + `MirrorFsaOnboarder`. Combined Core Vault `0xFE` mint+onboard needs mint liquidity; canary covers FDC Payment + onboarder. Operator: `rEyj8nsHLdgt79KJWzXR5BgF7ZbaohbXwq`. |
@@ -40,7 +40,7 @@ This document lists venues and features explicitly deferred or mocked on Coston2
 | `npm run tee:proxy` | Phase 3 operator proxy to matching-engine FCE |
 | `npm run ai:drift-monitor` / `ai:health-monitor` | Continuous Phase 9 loops (`DRIFT_MONITOR_CYCLES=3` for smoke) |
 | `npm run fce:compare-hashes` | Rebuild-twice + ME≠AI digests → `config/fce-code-hashes.json` |
-| `npm run ai:score-v1-tee` | Live AI FCE SAY_HELLO + SCORE_V1 (needs `AI_AGENT_SENDER` + `AI_EXT_PROXY_URL`) |
+| `npm run ai:score-v1-tee` | Live scoring FCE SAY_HELLO + SCORE_V1 (needs `AI_AGENT_SENDER` + `AI_EXT_PROXY_URL`) |
 
 Bounty mapping: [SUBMISSION.md](./SUBMISSION.md).
 

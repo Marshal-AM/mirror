@@ -15,8 +15,8 @@ type Step =
 const STEPS: { id: Step; label: string }[] = [
   { id: "waiting_xrpl", label: "Waiting for XRPL confirmation" },
   { id: "requesting_fdc", label: "Requesting FDC proof" },
-  { id: "minting_fxrp", label: "Minting FXRP" },
-  { id: "sub_account_active", label: "Sub-account active" },
+  { id: "minting_fxrp", label: "Executing instruction on Flare" },
+  { id: "sub_account_active", label: "PersonalAccount active" },
 ];
 
 function toMemoData(hex: string): string {
@@ -29,7 +29,8 @@ function encodePaymentReference(recipient: string, valueDrops: bigint): `0x${str
   const walletId = "00";
   const addr = recipient.replace(/^0x/, "").toLowerCase().padStart(40, "0");
   const value = valueDrops.toString(16).padStart(20, "0");
-  return `0x${typeCmd}${walletId}${addr}${value}` as `0x${string}`;
+  // Flare: [id:1][walletId:1][value:10][recipient:20]
+  return `0x${typeCmd}${walletId}${value}${addr}` as `0x${string}`;
 }
 
 export default function XrplOnboardPage() {
@@ -79,15 +80,26 @@ export default function XrplOnboardPage() {
     [amountXrp, memoData, lead, risk],
   );
 
+  function applyStatus(j: { state?: Step; message?: string; personalAccount?: string }) {
+    if (j.message) setMessage(j.message);
+    const done =
+      Boolean(j.personalAccount) ||
+      j.state === "sub_account_active" ||
+      /PersonalAccount ready|executeInstruction 0x/i.test(j.message ?? "");
+    if (done) {
+      setStep("sub_account_active");
+      return;
+    }
+    if (j.state) setStep(j.state);
+  }
+
   useEffect(() => {
     if (!xrplAddress || step === "idle" || step === "sub_account_active" || step === "failed") return;
     const t = setInterval(async () => {
       try {
         const res = await fetch(`${config.monitorUrl}/status/${encodeURIComponent(xrplAddress)}`);
         if (!res.ok) return;
-        const j = (await res.json()) as { state?: Step; message?: string };
-        if (j.state) setStep(j.state);
-        if (j.message) setMessage(j.message);
+        applyStatus((await res.json()) as { state?: Step; message?: string; personalAccount?: string });
       } catch {
         /* monitor may be offline */
       }
@@ -108,10 +120,18 @@ export default function XrplOnboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ xrplAddress, txHash, lead: lead || undefined }),
       });
-      const j = (await res.json()) as { error?: string; state?: Step; message?: string };
+      const j = (await res.json()) as {
+        error?: string;
+        state?: Step;
+        message?: string;
+        personalAccount?: string;
+      };
       if (!res.ok) throw new Error(j.error ?? res.statusText);
-      setStep(j.state ?? "requesting_fdc");
-      setMessage(j.message ?? "FDC round in progress — typically 1–3 minutes, do not resubmit.");
+      applyStatus(j);
+      if (!j.state && !j.personalAccount) {
+        setStep("requesting_fdc");
+        setMessage(j.message ?? "FDC round in progress — typically 1–3 minutes, do not resubmit.");
+      }
     } catch (e) {
       setStep("failed");
       setErr(e instanceof Error ? e.message : String(e));
