@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mirror — Private copy trading on Flare</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="deck" id="deck">
+      <!-- 01 TITLE -->
+      <section class="slide pack active" data-title="Title">
+        <div class="slide-kicker">
+          <strong>Mirror</strong>
+          <span>Flare Confidential Compute · Coston2</span>
+        </div>
+        <div class="hero-grid">
+          <div>
+            <p class="brand-word">Mirror</p>
+            <p class="subhead">Private copy trading on Flare.</p>
+            <p class="lede">
+              A lead encrypts a signal. A TEE decrypts it, sizes every follower from live FTSO prices and vault balances, and settles the fill on public contracts — without ever putting the strategy in the mempool.
+            </p>
+            <div class="cta-row">
+              <span class="chip mint">FCC · two FCEs</span>
+              <span class="chip">FTSO v2</span>
+              <span class="chip">FDC proofs</span>
+              <span class="chip">FXRP vaults</span>
+              <span class="chip">XRPL Smart Accounts</span>
+            </div>
+          </div>
+          <div class="art" aria-hidden="true">
+            <img src="shard.png" alt="" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 02 PROBLEM -->
+      <section class="slide pack" data-title="The exposure loop">
+        <div class="slide-kicker"><strong>01 · Problem</strong><span>Why copy trading breaks on a public chain</span></div>
+        <div>
+          <h2>Why copy trading breaks on-chain</h2>
+          <p class="lede">
+            eToro has 40 million users. Bybit, OKX, and Bitget ship copy trading natively. Retail wants skilled traders’ performance without managing every position. That demand is real. Onchain, the same product destroys itself.
+          </p>
+        </div>
+        <div class="loop">
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 19V5h10l6 7-6 7z"/></svg></div>
+            <h3>Lead publishes a trade</h3>
+            <p>Wallet becomes popular. Followers watch every outbound swap.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+            <h3>Replicas hit the mempool</h3>
+            <p>Follower txs land seconds after the original, in the clear.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 12h16M12 4l8 8-8 8"/></svg></div>
+            <h3>MEV sandwiches the wave</h3>
+            <p>Bots frontrun the lead, then the followers, with higher gas.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M5 19h14M7 15l5-10 5 10"/></svg></div>
+            <h3>Alpha dies with popularity</h3>
+            <p>Worse price for the lead. Worse still for every copier. Scale inverts the product.</p>
+          </article>
+        </div>
+        <p class="note">There is no way to make copy trading MEV-resistant with a normal smart contract: a public signal is a public invitation to frontrun.</p>
+      </section>
+
+      <!-- 03 FLARE GAP -->
+      <section class="slide pack" data-title="What Flare is missing">
+        <div class="slide-kicker"><strong>01 · Problem</strong><span>Flare’s DeFi stack vs. the missing primitive</span></div>
+        <h2>What’s missing on Flare</h2>
+        <p class="lede">
+          Flare already has the venue for XRPFi. It does not have a way to follow a skilled trader without leaking the strategy.
+        </p>
+        <div class="gap-map">
+          <div class="gap-head">
+            <span class="have">Flare already has</span>
+            <span></span>
+            <span class="need">Still missing</span>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell"><p>DEXes, lending, CDPs, and liquid staking around FXRP</p></div>
+            <div class="gap-but">but</div>
+            <div class="gap-cell need"><p>No copy-trading product of any kind</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell"><p>FTSO v2 prices at ~1.8s, plus 90s anchors</p></div>
+            <div class="gap-but">but</div>
+            <div class="gap-cell need"><p>No encrypted signal path — a popular lead wallet is a public strategy</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell"><p>FDC proofs for EVM txs, XRPL payments, and Web2 JSON</p></div>
+            <div class="gap-but">but</div>
+            <div class="gap-cell need"><p>No FDC-gated settlement of copy fills and lead fees</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell"><p>FAssets and Smart Accounts so XRPL users can enter without FLR</p></div>
+            <div class="gap-but">but</div>
+            <div class="gap-cell need"><p>No proportional, private fan-out of one intent into many vaults</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell"><p>FCC / TEE enclaves that can keep intent sealed until execution</p></div>
+            <div class="gap-but">but</div>
+            <div class="gap-cell need"><p>No attested, risk-adjusted leaderboard — only raw PnL vanity</p></div>
+          </div>
+        </div>
+        <p class="note">That gap is exactly what Mirror fills. FCC is not a bolt-on. It is the primitive that makes the product safe to exist.</p>
+      </section>
+
+      <!-- 04 PRESENTING -->
+      <section class="slide pack" data-title="What Mirror is">
+        <div class="slide-kicker"><strong>02 · Product</strong><span>Why this exists</span></div>
+        <h2>What Mirror is</h2>
+        <p class="lede">Copy a skilled trader on Flare without putting their strategy in the mempool. Scale no longer destroys the edge.</p>
+        <div class="vs">
+          <article class="vs-col bad">
+            <p class="vs-label">On a public chain</p>
+            <h3>Copying is a leak.</h3>
+            <p>The lead’s wallet is the strategy. Followers race it in the mempool. MEV takes the fill. Popularity is a tax.</p>
+          </article>
+          <div class="vs-mid" aria-hidden="true">→</div>
+          <article class="vs-col good">
+            <p class="vs-label">With Mirror</p>
+            <h3>Copying is sealed.</h3>
+            <p>The lead encrypts. A TEE copies into FXRP vaults. The chain only sees the fill — after it happens, with a proof.</p>
+          </article>
+        </div>
+        <div class="why3">
+          <article class="card">
+            <div class="stat">01</div>
+            <h3>Leads can get popular</h3>
+            <p>Intent never hits the mempool. Searchers see ciphertext. The strategy stays an edge, not a public RSS feed.</p>
+          </article>
+          <article class="card">
+            <div class="stat">02</div>
+            <h3>Followers get a fair fill</h3>
+            <p>One signal, sized per vault, priced from live FTSO. Batched execution — not a stampede of copy-cats.</p>
+          </article>
+          <article class="card">
+            <div class="stat">03</div>
+            <h3>Anyone can audit the result</h3>
+            <p>The swap is public. FDC proves it. Vaults and lead fees move only after that proof — not on an operator’s word.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 05 FEATURES -->
+      <section class="slide pack" data-title="What makes Mirror different">
+        <div class="slide-kicker"><strong>02 · Product</strong><span>From the running system</span></div>
+        <h2>What makes Mirror different</h2>
+        <div class="feat">
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+            <h3>Encrypt in the browser</h3>
+            <p>Ciphertext only on-chain. Searchers get noise.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="16"/><rect x="13" y="4" width="8" height="16"/></svg></div>
+            <h3>Two separate TEEs</h3>
+            <p>Matching ≠ scoring. Independent code hashes.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 18V6h6v12H4zM14 18V10h6v8h-6z"/></svg></div>
+            <h3>Sized per vault</h3>
+            <p>Fan-out to each follower. Not one cloned tx.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg></div>
+            <h3>Live FTSO prices</h3>
+            <p>Sizes from the oracle. 1% floor on expected out.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M5 19V5h14v10H9z"/><path d="M9 19l4-4"/></svg></div>
+            <h3>Fees need a proof</h3>
+            <p>No FDC attestation, no payout. claim() is blocked.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 16l4-8 4 4 4-8 4 12"/></svg></div>
+            <h3>Scores, not hype</h3>
+            <p>Sharpe, drawdown, cadence, data. Not an LLM.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3"/><circle cx="16" cy="8" r="3"/><path d="M11 12h2M16 11v8"/></svg></div>
+            <h3>Start from XRP</h3>
+            <p>Xaman in. No FLR required to follow.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 4v16M6 10l6-6 6 6"/></svg></div>
+            <h3>Drift &amp; health alerts</h3>
+            <p>Strategy change and liquidation risk, in-app.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 06 PRIVATE VS PUBLIC -->
+      <section class="slide" data-title="What's private vs public">
+        <div class="slide-kicker"><strong>02 · Product</strong><span>Inside the TEE vs on the chain</span></div>
+        <h2>What’s private vs public</h2>
+        <svg class="board" viewBox="0 0 1080 340" role="img" aria-label="What stays in the TEE versus what the chain proves">
+          <defs>
+            <marker id="arrPriv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <rect x="24" y="24" width="470" height="292" rx="8" fill="rgba(61,255,181,0.05)" stroke="#3dffb5" stroke-dasharray="8 5" />
+          <text x="259" y="54" text-anchor="middle" fill="#3dffb5" font-size="14" letter-spacing="2">INSIDE THE TEE  ·  NEVER ON-CHAIN</text>
+          <rect x="52" y="76" width="414" height="40" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="259" y="102" text-anchor="middle" font-size="15">the decrypted trade</text>
+          <rect x="52" y="128" width="414" height="40" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="259" y="154" text-anchor="middle" font-size="15">who follows, and how much</text>
+          <rect x="52" y="180" width="414" height="40" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="259" y="206" text-anchor="middle" font-size="15">the matching math</text>
+          <rect x="52" y="232" width="414" height="56" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="259" y="258" text-anchor="middle" font-size="15">private fill history</text>
+          <text x="259" y="276" text-anchor="middle" class="muted" font-size="12">Sharpe internals · drift log · SCORE_V1 events</text>
+
+          <path d="M494 170 H586" stroke="#3dffb5" stroke-width="1.5" marker-end="url(#arrPriv)" fill="none" />
+          <text x="540" y="156" text-anchor="middle" fill="#3dffb5" font-size="11">after fill</text>
+
+          <rect x="586" y="24" width="470" height="292" rx="8" fill="rgba(126,182,255,0.05)" stroke="#7eb6ff" />
+          <text x="821" y="54" text-anchor="middle" fill="#7eb6ff" font-size="14" letter-spacing="2">ON THE CHAIN  ·  ANYONE CAN CHECK</text>
+          <rect x="614" y="76" width="414" height="40" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="821" y="102" text-anchor="middle" fill="#e8eef5" font-size="15">encrypted signal bytes</text>
+          <rect x="614" y="128" width="414" height="40" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="821" y="154" text-anchor="middle" fill="#e8eef5" font-size="15">the venue swap happened</text>
+          <rect x="614" y="180" width="414" height="40" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="821" y="206" text-anchor="middle" fill="#e8eef5" font-size="15">FDC proof of that swap</text>
+          <rect x="614" y="232" width="414" height="56" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="821" y="258" text-anchor="middle" fill="#e8eef5" font-size="15">vault delta · score 0–100 · strategy badge</text>
+          <text x="821" y="276" text-anchor="middle" class="muted" font-size="12">never the signal body</text>
+        </svg>
+        <p class="caption">Followers see classification-level summaries only — “mean-reversion lead, ahead on epoch P&amp;L.” An adversarial test asserts Stage B calldata is ciphertext-only.</p>
+      </section>
+
+      <!-- 07 ROLES -->
+      <section class="slide pack" data-title="Roles">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>Three ways to enter the same product</span></div>
+        <h2>Who uses Mirror</h2>
+        <p class="lede">Three people. After onboarding, they share one vault graph — a lead’s sealed signal copies into each follower’s FXRP.</p>
+        <div class="grid-3">
+          <article class="card">
+            <span class="badge">Lead trader</span>
+            <h3 style="margin-top:0.55rem">Sells a strategy without leaking it</h3>
+            <p>Sets a fee (0–20%) and encrypts each trade in the browser. Followers copy automatically. The lead sees total AUM, never who is copying or how much.</p>
+            <p class="meta">Has a Flare wallet · already trading</p>
+          </article>
+          <article class="card">
+            <span class="badge">Follower · already on Flare</span>
+            <h3 style="margin-top:0.55rem">Deposits FXRP and is done</h3>
+            <p>Picks a lead from Discover, chooses risk, deposits. The next encrypted signal is sized into their vault. They never see the trade itself — only the result.</p>
+            <p class="meta">Needs FXRP on Flare</p>
+          </article>
+          <article class="card">
+            <span class="badge">Follower · XRPL / Xaman</span>
+            <h3 style="margin-top:0.55rem">Pays XRP. Never holds FLR.</h3>
+            <p>Pays from Xaman. Flare proves the payment, opens a Smart Account, and credits an FXRP vault. From there it is the same as the Flare follower path.</p>
+            <p class="meta">XRP only · no EVM wallet required</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 08 SYSTEM MAP -->
+      <section class="slide" data-title="System map">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>From the frontend, FCEs, contracts, and relayers — not the PRD</span></div>
+        <h2>How the system connects</h2>
+        <svg class="board" viewBox="0 0 1080 420" role="img" aria-label="Mirror system graph">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+            <marker id="arrb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#7eb6ff" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <text x="70" y="28" class="muted" font-size="13" letter-spacing="2">APP</text>
+          <text x="430" y="28" fill="#3dffb5" font-size="13" letter-spacing="2">TEE  ·  PRIVATE</text>
+          <text x="790" y="28" fill="#7eb6ff" font-size="13" letter-spacing="2">FLARE C-CHAIN  ·  PUBLIC</text>
+
+          <rect x="28" y="48" width="220" height="64" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="138" y="76" text-anchor="middle" font-size="16">Web app</text>
+          <text x="138" y="96" text-anchor="middle" class="muted" font-size="12">Discover · Signal · XRPL</text>
+
+          <rect x="28" y="140" width="220" height="64" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="138" y="168" text-anchor="middle" font-size="16">encrypt.ts</text>
+          <text x="138" y="188" text-anchor="middle" class="muted" font-size="12">ECIES → TEE pubkey</text>
+
+          <rect x="28" y="232" width="220" height="64" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="138" y="260" text-anchor="middle" font-size="16">Operator</text>
+          <text x="138" y="280" text-anchor="middle" class="muted" font-size="12">XRPL monitor · fill poll</text>
+
+          <rect x="28" y="324" width="220" height="64" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="138" y="352" text-anchor="middle" font-size="16">Alerts</text>
+          <text x="138" y="372" text-anchor="middle" class="muted" font-size="12">drift · liquidation</text>
+
+          <rect x="360" y="56" width="300" height="332" rx="6" fill="rgba(61,255,181,0.05)" stroke="#3dffb5" stroke-dasharray="7 5" />
+          <text x="510" y="84" text-anchor="middle" fill="#3dffb5" font-size="13">FCC  ·  two FCEs</text>
+
+          <rect x="390" y="104" width="240" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="510" y="134" text-anchor="middle" font-size="16">Matching FCE</text>
+          <text x="510" y="154" text-anchor="middle" class="muted" font-size="12">MATCH_V1  ·  TOPUP_V1</text>
+
+          <rect x="390" y="196" width="240" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="510" y="226" text-anchor="middle" font-size="16">AI FCE</text>
+          <text x="510" y="246" text-anchor="middle" class="muted" font-size="12">SCORE_V1  ·  classify</text>
+
+          <rect x="390" y="288" width="240" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="510" y="318" text-anchor="middle" font-size="16">tee-proxy</text>
+          <text x="510" y="338" text-anchor="middle" class="muted" font-size="12">/action/result/{id}</text>
+
+          <rect x="780" y="56" width="260" height="70" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="910" y="86" text-anchor="middle" fill="#e8eef5" font-size="16">InstructionSender</text>
+          <text x="910" y="106" text-anchor="middle" class="muted" font-size="12">Stage B in · fill + settle</text>
+
+          <rect x="780" y="150" width="260" height="70" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="910" y="180" text-anchor="middle" fill="#e8eef5" font-size="16">Registry · Vault · Fee</text>
+          <text x="910" y="200" text-anchor="middle" class="muted" font-size="12">identity · FXRP · FDC fees</text>
+
+          <rect x="780" y="244" width="260" height="70" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="910" y="274" text-anchor="middle" fill="#e8eef5" font-size="16">Leaderboard</text>
+          <text x="910" y="294" text-anchor="middle" class="muted" font-size="12">attested score 0–100</text>
+
+          <rect x="780" y="338" width="260" height="50" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="910" y="368" text-anchor="middle" fill="#e8eef5" font-size="15">FTSO · FSA · HealthAuth</text>
+
+          <path d="M248 80 H350" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr)" fill="none" />
+          <path d="M248 172 H350" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr)" fill="none" />
+          <path d="M248 264 H350" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr)" fill="none" />
+          <path d="M630 139 H770" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arrb)" fill="none" />
+          <path d="M630 231 H770" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arrb)" fill="none" />
+          <path d="M510 174 V196" stroke="#3dffb5" stroke-width="1.3" fill="none" />
+        </svg>
+        <p class="legend"><span><i></i>sealed / TEE</span><span><i class="pub"></i>on-chain</span><span><i class="dash"></i>enclave boundary</span></p>
+      </section>
+
+      <!-- 09 LEAD FLOW -->
+      <section class="slide" data-title="Lead flow">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>/lead/onboard → /signal → FCC instruction</span></div>
+        <h2>How a lead publishes a signal</h2>
+        <svg class="board" viewBox="0 0 1080 280" role="img" aria-label="Lead onboarding and signal graph">
+          <defs>
+            <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <rect x="20" y="70" width="150" height="72" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="95" y="100" text-anchor="middle" font-size="15">Wallet</text>
+          <text x="95" y="120" text-anchor="middle" class="muted" font-size="12">Coston2 EOA</text>
+
+          <rect x="210" y="70" width="170" height="72" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="295" y="100" text-anchor="middle" font-size="15">registerLead</text>
+          <text x="295" y="120" text-anchor="middle" class="muted" font-size="12">fee · strategy · teeHash</text>
+
+          <rect x="420" y="70" width="150" height="72" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="495" y="100" text-anchor="middle" font-size="15">TEE /info</text>
+          <text x="495" y="120" text-anchor="middle" class="muted" font-size="12">0x04 || x || y</text>
+
+          <rect x="610" y="58" width="180" height="96" rx="3" fill="rgba(61,255,181,0.08)" stroke="#3dffb5" stroke-dasharray="6 4" />
+          <text x="700" y="92" text-anchor="middle" font-size="15">ECIES lock</text>
+          <text x="700" y="114" text-anchor="middle" class="muted" font-size="12">browser only</text>
+          <text x="700" y="134" text-anchor="middle" fill="#3dffb5" font-size="12">plaintext never on chain</text>
+
+          <rect x="830" y="70" width="230" height="72" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="945" y="100" text-anchor="middle" fill="#e8eef5" font-size="15">MATCH_V1</text>
+          <text x="945" y="120" text-anchor="middle" class="muted" font-size="12">sendMirrorMatchStageB</text>
+
+          <path d="M170 106 H204" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr2)" fill="none" />
+          <path d="M380 106 H414" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr2)" fill="none" />
+          <path d="M570 106 H604" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr2)" fill="none" />
+          <path d="M790 106 H824" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr2)" fill="none" />
+
+          <circle cx="700" cy="210" r="6" fill="#3dffb5" />
+          <text x="720" y="216" class="muted" font-size="13">UI waits on MatchExecuted — fill-worker calls executeMatch, not the page</text>
+        </svg>
+        <p class="caption">Signal body: <span class="code">{ asset, direction: SELL, sizePct, nonce, lead }</span> · FCC fee 1e6 wei · FXRP-only because the vault is single-asset.</p>
+      </section>
+
+      <!-- 10 FOLLOWER EVM -->
+      <section class="slide" data-title="Follower EVM">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>/discover → /lead/[address] → /follower/onboard</span></div>
+        <h2>How a follower starts copying</h2>
+        <svg class="board" viewBox="0 0 1080 300" role="img" aria-label="Follower EVM onboarding graph">
+          <defs>
+            <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <rect x="16" y="40" width="140" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="86" y="70" text-anchor="middle" font-size="15">Discover</text>
+          <text x="86" y="90" text-anchor="middle" class="muted" font-size="12">score · strategy</text>
+
+          <rect x="186" y="40" width="140" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="256" y="70" text-anchor="middle" font-size="15">Lead page</text>
+          <text x="256" y="90" text-anchor="middle" class="muted" font-size="12">0–100 · fee %</text>
+
+          <rect x="356" y="40" width="150" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="431" y="70" text-anchor="middle" font-size="15">register</text>
+          <text x="431" y="90" text-anchor="middle" class="muted" font-size="12">risk profile</text>
+
+          <rect x="536" y="40" width="140" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="606" y="70" text-anchor="middle" font-size="15">approve</text>
+          <text x="606" y="90" text-anchor="middle" class="muted" font-size="12">FXRP 6 dp</text>
+
+          <rect x="706" y="40" width="150" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="781" y="70" text-anchor="middle" font-size="15">deposit</text>
+          <text x="781" y="90" text-anchor="middle" class="muted" font-size="12">vault.deposit</text>
+
+          <rect x="886" y="40" width="170" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="971" y="70" text-anchor="middle" font-size="15">followLead</text>
+          <text x="971" y="90" text-anchor="middle" class="muted" font-size="12">allocation live</text>
+
+          <path d="M156 75 H180" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr3)" fill="none" />
+          <path d="M326 75 H350" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr3)" fill="none" />
+          <path d="M506 75 H530" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr3)" fill="none" />
+          <path d="M676 75 H700" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr3)" fill="none" />
+          <path d="M856 75 H880" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr3)" fill="none" />
+
+          <rect x="186" y="170" width="708" height="100" rx="6" fill="rgba(61,255,181,0.04)" stroke="#3dffb5" stroke-dasharray="6 4" />
+          <text x="540" y="198" text-anchor="middle" fill="#3dffb5" font-size="13">ONE SUB-ACCOUNT  ·  (follower, lead)</text>
+          <text x="540" y="226" text-anchor="middle" font-size="16">MirrorVault  ·  InstructionSender is the only mover</text>
+          <text x="540" y="250" text-anchor="middle" class="muted" font-size="13">balance  ·  pendingLocked during fill  ·  never sees sizePct or direction</text>
+          <path d="M781 110 V170" stroke="#3dffb5" stroke-width="1.3" marker-end="url(#arr3)" fill="none" />
+        </svg>
+        <p class="caption">Risk stays on-chain (conservative / moderate / aggressive). Copying starts on the next encrypted signal — no extra click.</p>
+      </section>
+
+      <!-- 11 XRPL -->
+      <section class="slide" data-title="XRPL path">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>/follower/xrpl · FDC Payment · MasterAccountController</span></div>
+        <h2>How XRPL holders join with no FLR</h2>
+        <svg class="board" viewBox="0 0 1080 300" role="img" aria-label="XRPL Smart Account onboarding graph">
+          <defs>
+            <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <rect x="20" y="36" width="150" height="78" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="95" y="68" text-anchor="middle" font-size="15">Xaman</text>
+          <text x="95" y="90" text-anchor="middle" class="muted" font-size="12">QR · 32-byte memo</text>
+          <rect x="210" y="36" width="170" height="78" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="295" y="68" text-anchor="middle" font-size="15">XRPL Payment</text>
+          <text x="295" y="90" text-anchor="middle" class="muted" font-size="12">operator rEyj…bXwq</text>
+          <rect x="420" y="36" width="160" height="78" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="500" y="68" text-anchor="middle" font-size="15">Monitor</text>
+          <text x="500" y="90" text-anchor="middle" class="muted" font-size="12">waiting_xrpl</text>
+          <rect x="620" y="36" width="180" height="78" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="710" y="68" text-anchor="middle" fill="#e8eef5" font-size="15">FDC Payment</text>
+          <text x="710" y="90" text-anchor="middle" class="muted" font-size="12">testXRP · ~90s round</text>
+          <rect x="840" y="36" width="220" height="78" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="950" y="68" text-anchor="middle" fill="#e8eef5" font-size="15">MasterAccount</text>
+          <text x="950" y="90" text-anchor="middle" class="muted" font-size="12">executeInstruction</text>
+          <path d="M170 75 H204" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr4)" fill="none" />
+          <path d="M380 75 H414" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr4)" fill="none" />
+          <path d="M580 75 H614" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr4)" fill="none" />
+          <path d="M800 75 H834" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arr4)" fill="none" />
+          <path d="M950 114 V168" stroke="#3dffb5" stroke-width="1.3" marker-end="url(#arr4)" fill="none" />
+          <rect x="300" y="168" width="480" height="88" rx="6" fill="rgba(61,255,181,0.05)" stroke="#3dffb5" />
+          <text x="540" y="202" text-anchor="middle" font-size="16">MirrorFsaOnboarder.onboard</text>
+          <text x="540" y="226" text-anchor="middle" class="muted" font-size="13">registerFollowerAs  →  followLeadAs  →  vault.depositFor</text>
+          <text x="540" y="246" text-anchor="middle" fill="#3dffb5" font-size="12">from here the follower is identical to the EVM path</text>
+        </svg>
+        <p class="caption">No C2FLR required. Combined Core Vault mint+onboard still needs mint liquidity on Coston2 — the canary proves FDC Payment + onboarder.</p>
+      </section>
+
+      <!-- 12 MATCHING ENGINE -->
+      <section class="slide" data-title="Matching engine">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>fce-matching-engine · handleMirrorMatchStageB</span></div>
+        <h2>How the matching TEE works</h2>
+        <svg class="board" viewBox="0 0 1080 360" role="img" aria-label="Matching TEE decrypt size fan-out graph">
+          <defs>
+            <marker id="arr5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <rect x="16" y="140" width="150" height="70" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="91" y="168" text-anchor="middle" fill="#e8eef5" font-size="14">ciphertext</text>
+          <text x="91" y="188" text-anchor="middle" class="muted" font-size="12">MATCH_V1</text>
+
+          <rect x="200" y="36" width="520" height="288" rx="8" fill="rgba(61,255,181,0.05)" stroke="#3dffb5" stroke-dasharray="8 5" />
+          <text x="460" y="62" text-anchor="middle" fill="#3dffb5" font-size="13">MATCHING FCE  ·  TEE</text>
+
+          <rect x="230" y="88" width="150" height="64" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="305" y="114" text-anchor="middle" font-size="15">decrypt</text>
+          <text x="305" y="134" text-anchor="middle" class="muted" font-size="12">/decrypt</text>
+
+          <rect x="420" y="88" width="150" height="64" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="495" y="114" text-anchor="middle" font-size="15">FTSO v2</text>
+          <text x="495" y="134" text-anchor="middle" class="muted" font-size="12">FXRP · USDT0</text>
+
+          <rect x="610" y="88" width="80" height="64" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="650" y="126" text-anchor="middle" font-size="14">size</text>
+
+          <rect x="250" y="200" width="420" height="96" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="460" y="232" text-anchor="middle" font-size="15">fan-out</text>
+          <text x="460" y="254" text-anchor="middle" class="muted" font-size="13">(balance − locked) × sizePctBps / 10_000</text>
+          <text x="460" y="276" text-anchor="middle" fill="#3dffb5" font-size="12">F1   F2   F3   ···   Fn</text>
+
+          <rect x="760" y="88" width="280" height="64" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="900" y="114" text-anchor="middle" fill="#e8eef5" font-size="15">{ to, data, venue }</text>
+          <text x="900" y="134" text-anchor="middle" class="muted" font-size="12">does not broadcast</text>
+
+          <rect x="760" y="176" width="280" height="64" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="900" y="202" text-anchor="middle" fill="#e8eef5" font-size="15">exactInputSingle</text>
+          <text x="900" y="222" text-anchor="middle" class="muted" font-size="12">minOut = expected × 0.99</text>
+
+          <rect x="760" y="264" width="280" height="50" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="900" y="294" text-anchor="middle" fill="#e8eef5" font-size="14">authorizedExecutor fills</text>
+
+          <path d="M166 175 H200" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr5)" fill="none" />
+          <path d="M380 120 H414" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr5)" fill="none" />
+          <path d="M570 120 H604" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr5)" fill="none" />
+          <path d="M650 152 V200" stroke="#3dffb5" stroke-width="1.3" marker-end="url(#arr5)" fill="none" />
+          <path d="M720 248 H754" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arr5)" fill="none" />
+        </svg>
+        <p class="caption">Venues: mock-sparkdex default · optional BlazeSwap V2 · Enosys/Firelight if MIRROR_MOCK_VENUES. PMW signing of the settlement tx is still partial (SIGN_PORT).</p>
+      </section>
+
+      <!-- 13 SETTLEMENT -->
+      <section class="slide" data-title="Fill and settlement">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>executeMatch → PendingFill → applyFdcSettlement</span></div>
+        <h2>How a fill becomes final</h2>
+        <svg class="board" viewBox="0 0 1080 300" role="img" aria-label="Fill then FDC settlement graph">
+          <defs>
+            <marker id="arr6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <rect x="20" y="50" width="190" height="78" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="115" y="82" text-anchor="middle" font-size="15">executeMatch</text>
+          <text x="115" y="104" text-anchor="middle" class="muted" font-size="12">authorizedExecutor</text>
+
+          <rect x="250" y="50" width="190" height="78" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="345" y="82" text-anchor="middle" font-size="15">venue swap</text>
+          <text x="345" y="104" text-anchor="middle" class="muted" font-size="12">FXRP locked</text>
+
+          <rect x="480" y="36" width="200" height="106" rx="3" fill="rgba(255,200,87,0.08)" stroke="#ffc857" />
+          <text x="580" y="76" text-anchor="middle" fill="#ffc857" font-size="15">PendingFill</text>
+          <text x="580" y="100" text-anchor="middle" class="muted" font-size="12">not settled yet</text>
+          <text x="580" y="120" text-anchor="middle" class="muted" font-size="12">balances unchanged</text>
+
+          <rect x="720" y="50" width="150" height="78" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="795" y="82" text-anchor="middle" fill="#e8eef5" font-size="15">FDC attest</text>
+          <text x="795" y="104" text-anchor="middle" class="muted" font-size="12">EVMTransaction</text>
+
+          <rect x="910" y="50" width="150" height="78" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="985" y="82" text-anchor="middle" fill="#e8eef5" font-size="15">apply proof</text>
+          <text x="985" y="104" text-anchor="middle" class="muted" font-size="12">unique tx hash</text>
+
+          <path d="M210 89 H244" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr6)" fill="none" />
+          <path d="M440 89 H474" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr6)" fill="none" />
+          <path d="M680 89 H714" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arr6)" fill="none" />
+          <path d="M870 89 H904" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arr6)" fill="none" />
+
+          <path d="M985 128 V188" stroke="#3dffb5" stroke-width="1.3" marker-end="url(#arr6)" fill="none" />
+          <rect x="250" y="188" width="580" height="80" rx="6" fill="rgba(61,255,181,0.05)" stroke="#3dffb5" />
+          <text x="540" y="220" text-anchor="middle" font-size="16">settleFromProof  +  accrueFee  +  releaseFee</text>
+          <text x="540" y="244" text-anchor="middle" class="muted" font-size="13">lead 0–20% of profit · protocol 10% of that (computed, not yet FIRE) · claim() always reverts</text>
+        </svg>
+        <p class="caption">Withdraw queues via requestWithdrawal — funds return after unwind, not as an instant ERC20 transfer. Proof-free settleBatch is off by default.</p>
+      </section>
+
+      <!-- 14 AI AGENT -->
+      <section class="slide" data-title="AI agent">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>fce-ai-agent · SCORE_V1 · not a language model</span></div>
+        <h2>How leads get scored</h2>
+        <svg class="board" viewBox="0 0 1080 340" role="img" aria-label="SCORE_V1 scoring graph">
+          <defs>
+            <marker id="arr7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <rect x="20" y="120" width="170" height="78" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="105" y="152" text-anchor="middle" font-size="15">outcome log</text>
+          <text x="105" y="174" text-anchor="middle" class="muted" font-size="12">private · Bearer</text>
+
+          <rect x="230" y="40" width="430" height="260" rx="8" fill="rgba(61,255,181,0.05)" stroke="#3dffb5" stroke-dasharray="8 5" />
+          <text x="445" y="68" text-anchor="middle" fill="#3dffb5" font-size="13">AI FCE  ·  SCORE_V1  ·  not an LLM</text>
+
+          <rect x="260" y="88" width="370" height="88" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="445" y="114" text-anchor="middle" font-size="15">composite 0–100</text>
+          <text x="445" y="136" text-anchor="middle" class="muted" font-size="12">Sharpe 40%   DD 25%   cadence 20%   data 15%</text>
+          <rect x="280" y="148" width="70" height="8" fill="#3dffb5" />
+          <rect x="358" y="148" width="44" height="8" fill="#3dffb5" opacity="0.7" />
+          <rect x="410" y="148" width="36" height="8" fill="#3dffb5" opacity="0.5" />
+          <rect x="454" y="148" width="28" height="8" fill="#3dffb5" opacity="0.35" />
+
+          <rect x="260" y="196" width="170" height="70" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="345" y="226" text-anchor="middle" font-size="14">classify</text>
+          <text x="345" y="246" text-anchor="middle" class="muted" font-size="11">mom · mean-rev · yield</text>
+
+          <rect x="460" y="196" width="170" height="70" rx="3" fill="#121821" stroke="#ffc857" />
+          <text x="545" y="226" text-anchor="middle" fill="#ffc857" font-size="14">drift?</text>
+          <text x="545" y="246" text-anchor="middle" class="muted" font-size="11">conf ≥ 0.55</text>
+
+          <rect x="710" y="88" width="340" height="70" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="880" y="118" text-anchor="middle" fill="#e8eef5" font-size="15">updateScore</text>
+          <text x="880" y="138" text-anchor="middle" class="muted" font-size="12">onlyAiAgentSigner · host, not TEE</text>
+
+          <rect x="710" y="180" width="340" height="70" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="880" y="210" text-anchor="middle" fill="#e8eef5" font-size="15">alerts + TOPUP_V1</text>
+          <text x="880" y="230" text-anchor="middle" class="muted" font-size="12">health CR &lt; 13000 bps</text>
+
+          <path d="M190 159 H224" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr7)" fill="none" />
+          <path d="M660 132 H704" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arr7)" fill="none" />
+          <path d="M630 231 H704" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arr7)" fill="none" />
+        </svg>
+        <p class="caption">Web2Json (DeFiLlama / CoinGecko) is attested in canaries and stored as an attestation id — it is not mixed into the 0–100 weights.</p>
+      </section>
+
+      <!-- 15 AFTER FILL -->
+      <section class="slide" data-title="Portfolio and safety">
+        <div class="slide-kicker"><strong>03 · How it works</strong><span>/portfolio · /withdraw · alerts · TOPUP_V1</span></div>
+        <h2>What followers see after a fill</h2>
+        <svg class="board" viewBox="0 0 1080 280" role="img" aria-label="End to end Mirror loop">
+          <defs>
+            <marker id="arr8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M1,1 L9,5 L1,9" fill="none" stroke="#3dffb5" stroke-width="1.6" />
+            </marker>
+          </defs>
+          <rect x="20" y="40" width="130" height="58" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="85" y="74" text-anchor="middle" font-size="14">encrypt</text>
+          <rect x="180" y="40" width="130" height="58" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="245" y="74" text-anchor="middle" font-size="14">MATCH_V1</text>
+          <rect x="340" y="40" width="130" height="58" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="405" y="74" text-anchor="middle" font-size="14">FTSO size</text>
+          <rect x="500" y="40" width="130" height="58" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="565" y="74" text-anchor="middle" font-size="14">fill venue</text>
+          <rect x="660" y="40" width="130" height="58" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="725" y="74" text-anchor="middle" fill="#e8eef5" font-size="14">FDC prove</text>
+          <rect x="820" y="40" width="130" height="58" rx="3" fill="#121821" stroke="#7eb6ff" />
+          <text x="885" y="74" text-anchor="middle" fill="#e8eef5" font-size="14">SCORE_V1</text>
+          <rect x="960" y="40" width="100" height="58" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="1010" y="74" text-anchor="middle" font-size="13">UI</text>
+
+          <path d="M150 69 H174" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr8)" fill="none" />
+          <path d="M310 69 H334" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr8)" fill="none" />
+          <path d="M470 69 H494" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr8)" fill="none" />
+          <path d="M630 69 H654" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr8)" fill="none" />
+          <path d="M790 69 H814" stroke="#7eb6ff" stroke-width="1.4" marker-end="url(#arr8)" fill="none" />
+          <path d="M950 69 H954" stroke="#3dffb5" stroke-width="1.4" marker-end="url(#arr8)" fill="none" />
+
+          <rect x="80" y="150" width="200" height="90" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="180" y="184" text-anchor="middle" fill="#3dffb5" font-size="14">Healthy</text>
+          <text x="180" y="208" text-anchor="middle" class="muted" font-size="12">balance · epoch P&amp;L</text>
+          <text x="180" y="226" text-anchor="middle" class="muted" font-size="12">classification only</text>
+
+          <rect x="320" y="150" width="200" height="90" rx="3" fill="#121821" stroke="#ffc857" />
+          <text x="420" y="184" text-anchor="middle" fill="#ffc857" font-size="14">Drift Detected</text>
+          <text x="420" y="208" text-anchor="middle" class="muted" font-size="12">class ≠ baseline</text>
+          <text x="420" y="226" text-anchor="middle" class="muted" font-size="12">review allocation</text>
+
+          <rect x="560" y="150" width="200" height="90" rx="3" fill="#121821" stroke="#ff6b7a" />
+          <text x="660" y="184" text-anchor="middle" fill="#ff6b7a" font-size="14">Liquidation Risk</text>
+          <text x="660" y="208" text-anchor="middle" class="muted" font-size="12">CR &lt; 13000 bps</text>
+          <text x="660" y="226" text-anchor="middle" class="muted" font-size="12">optional TOPUP_V1</text>
+
+          <rect x="800" y="150" width="200" height="90" rx="3" fill="#121821" stroke="#3dffb5" />
+          <text x="900" y="184" text-anchor="middle" fill="#3dffb5" font-size="14">Withdraw</text>
+          <text x="900" y="208" text-anchor="middle" class="muted" font-size="12">requestWithdrawal</text>
+          <text x="900" y="226" text-anchor="middle" class="muted" font-size="12">after unwind</text>
+        </svg>
+        <p class="caption">The strategy itself is never shown. Portfolio language stays at classification level: “mean-reversion lead — ahead on epoch P&amp;L.”</p>
+      </section>
+
+      <!-- 16 FLARE 1 -->
+      <section class="slide" data-title="Flare FCC and FTSO">
+        <div class="slide-kicker"><strong>04 · Flare</strong><span>Confidential compute + prices — why Mirror can exist</span></div>
+        <div>
+          <h2>How Flare powers Mirror</h2>
+        </div>
+        <table class="flare-table">
+          <thead>
+            <tr><th>Primitive</th><th>How Mirror uses it</th><th>Why it is required</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FCC / TEE</td>
+              <td>Matching + scoring FCEs on Confidential Space (AMD SEV). Decrypt, size, score stay sealed.</td>
+              <td>A public contract cannot hide intent until after execution. Without the enclave, copy trading is MEV bait.</td>
+            </tr>
+            <tr>
+              <td>FCE + code hash</td>
+              <td>Registered extensions, published hashes (<span class="code">fce:compare-hashes</span>). InstructionSender / AiAgentSender latch extension ids.</td>
+              <td>Anyone can verify matching logic is unmodified without reading a live signal.</td>
+            </tr>
+            <tr>
+              <td>Tee registries + payments</td>
+              <td><span class="code">sendInstructions</span> with 1e6 wei fee. TeeManager logs yield the instruction id the UI waits on.</td>
+              <td>Decentralised relay into the enclave — not a private API the operator can silently swap.</td>
+            </tr>
+            <tr>
+              <td>FTSO v2 (~1.8s)</td>
+              <td>TEE + FtsoPriceReader + MockSparkDexRouter quote FXRP/USD and USDT0/USD from ContractRegistry.</td>
+              <td>Follower size and min-out must not be manipulable by a stale pool tick.</td>
+            </tr>
+            <tr>
+              <td>FTSO anchor (~90s)</td>
+              <td>AnchorDivergenceGuard on large notionals: revert if |block−anchor| / anchor exceeds maxDivergenceBps.</td>
+              <td>Second, slower reference stops a short FTSO blip from oversizing a copy wave.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- 17 FLARE 2 -->
+      <section class="slide" data-title="Flare FDC FAssets FSA">
+        <div class="slide-kicker"><strong>04 · Flare</strong><span>Attestation, assets, accounts, venues</span></div>
+        <div>
+          <h2>Flare proofs, assets, and XRPL</h2>
+        </div>
+        <table class="flare-table">
+          <thead>
+            <tr><th>Primitive</th><th>How Mirror uses it</th><th>Significance</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FDC EVMTransaction</td>
+              <td>Relayer attests the venue Swap. InstructionSender checks router, amounts, unique hash, status 1.</td>
+              <td>Vault settle and lead fee release are trust-minimised — not an operator “yes, it filled.”</td>
+            </tr>
+            <tr>
+              <td>FDC Payment</td>
+              <td>XRPL Payment → MasterAccountController.executeInstruction.</td>
+              <td>Proves the XRP actually moved before a Flare sub-account is created.</td>
+            </tr>
+            <tr>
+              <td>FDC Web2Json</td>
+              <td>Score canary attests DeFiLlama TVL / CoinGecko vol into attestation ids on the leaderboard.</td>
+              <td>External market context is cryptographically referenced, even if not in the 0–100 weights.</td>
+            </tr>
+            <tr>
+              <td>FAssets / FXRP</td>
+              <td>Sole vault asset (6 decimals). TEE resolves via AssetManagerFXRP.fAsset().</td>
+              <td>Native XRP exposure on Flare DeFi — no wrapped-bridge custody story.</td>
+            </tr>
+            <tr>
+              <td>Flare Smart Accounts</td>
+              <td>PersonalAccount + MirrorFsaOnboarder.registerFollowerAs / depositFor.</td>
+              <td>Opens Mirror to 40M+ XRP addresses that have never held FLR.</td>
+            </tr>
+            <tr>
+              <td>Venues</td>
+              <td>SparkDEX V3 ABI (mock on Coston2 — no bytecode). BlazeSwap self-seeded pair. Kinetic / Enosys / Firelight interface mocks; real Firelight vault reserved.</td>
+              <td>Same calldata path swaps to mainnet routers later. Coston2 honesty: mocks are labeled, not hidden.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- 18 USERS -->
+      <section class="slide" data-title="Target users">
+        <div class="slide-kicker"><strong>05 · Users</strong><span>Who this is for, and why it is the only version that works for them</span></div>
+        <div>
+          <h2>Who this is for</h2>
+        </div>
+        <div class="users">
+          <div class="lane">
+            <article class="card">
+              <h3>Retail XRP holders</h3>
+              <p>The primary market. They want FXRP yield and skilled flow without running a grid, watching Kinetic CR, or learning SparkDEX ticks. Mirror’s XRPL path means they can start from Xaman.</p>
+            </article>
+            <article class="card">
+              <h3>Flare DeFi users already on Coston2 / mainnet</h3>
+              <p>They have FXRP in-wallet. Discover + one deposit is the whole job. They need risk-adjusted scores (Sharpe, drawdown) instead of a PnL leaderboard that hides blow-ups.</p>
+            </article>
+            <article class="card">
+              <h3>Lead traders</h3>
+              <p>They will not publish a wallet if popularity is a MEV tax. Encrypted signals + batched fills let them sell a 0–20% performance fee without donating the strategy to searchers.</p>
+            </article>
+          </div>
+          <div class="lane">
+            <article class="card">
+              <p class="col-title private">Why this helps them specifically</p>
+              <ul class="list">
+                <li>XRPFi growth needs a passive product, not another DEX UI</li>
+                <li>MEV protection is the difference between “copy” and “get farmed”</li>
+                <li>Attested scores stop followers from picking the loudest, most fragile lead</li>
+                <li>Drift alerts are the missing safety net every CEX copy product still lacks</li>
+                <li>FSA removes the “buy FLR first” freeze that kills XRPL onboarding</li>
+              </ul>
+            </article>
+            <article class="card">
+              <h3>Not the target</h3>
+              <p>High-frequency arb desks that need sub-block exclusive orderflow. Mirror is proportional copy of vault FXRP, not a dark pool for professional flow.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 19 ROADMAP -->
+      <section class="slide pack" data-title="Next steps">
+        <div class="slide-kicker"><strong>06 · Next</strong><span>Production-ready first, then mainnet and distribution</span></div>
+        <h2>What’s next</h2>
+        <p class="lede">Harden the enclave path until fills are boring. Then take the same contracts to mainnet and grow through XRPL.</p>
+        <div class="gap-map">
+          <div class="gap-head">
+            <span class="need">Make it production-ready</span>
+            <span></span>
+            <span class="have">Then the business side</span>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell need"><p>Audit Registry, Vault, Fee, Sender, FSA onboarder, and both FCE code hashes</p></div>
+            <div class="gap-but">then</div>
+            <div class="gap-cell"><p>Deploy to Flare mainnet (chain 14) with the live SparkDEX V3 router</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell need"><p>Finish TEE-resident PMW signing so the executor key is not a human EOA</p></div>
+            <div class="gap-but">then</div>
+            <div class="gap-cell"><p>Seed a small set of verified leads — scores stay 0 until real fills</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell need"><p>Fill-worker uses TEE-sized amounts instead of re-deriving size</p></div>
+            <div class="gap-but">then</div>
+            <div class="gap-cell"><p>GTM through Xaman / XRPL: follow from XRP, never buy FLR first</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell need"><p>Route the 10% protocol cut into FIRE / FIP.16</p></div>
+            <div class="gap-but">then</div>
+            <div class="gap-cell"><p>Liquidity partnerships so FXRP/USDT0 can absorb copy waves</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell need"><p>Swap mock SparkDEX / Kinetic / Enosys for live venue addresses</p></div>
+            <div class="gap-but">then</div>
+            <div class="gap-cell"><p>Lead acquisition via performance fees, not token incentives</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell need"><p>One-shot FSA mint so XRPL → vault credit does not need an EOA top-up</p></div>
+            <div class="gap-but">then</div>
+            <div class="gap-cell"><p>Optional Firelight stXRP tier, then Kinetic / Enosys strategy leads</p></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-cell need"><p>Always-on drift and health monitors, plus multi-operator FCC as the network matures</p></div>
+            <div class="gap-but">then</div>
+            <div class="gap-cell"><p>Only after fills are boring: FBTC markets, Songbird canary, and a mobile shell</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 20 CLOSE -->
+      <section class="slide thanks" data-title="Thank you">
+        <p class="thanks-word">Thank you</p>
+      </section>
+    </main>
+
+    <footer class="chrome">
+      <span class="counter" id="counter">01 / 20</span>
+      <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+      <div class="nav-btns">
+        <span class="hint">← →</span>
+        <button type="button" id="prev">Prev</button>
+        <button type="button" id="next">Next</button>
+      </div>
+    </footer>
+
+    <script>
+      const slides = [...document.querySelectorAll(".slide")];
+      const counter = document.getElementById("counter");
+      const bar = document.getElementById("bar");
+      let i = 0;
+
+      function show(n) {
+        i = (n + slides.length) % slides.length;
+        slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+        const n1 = String(i + 1).padStart(2, "0");
+        const n2 = String(slides.length).padStart(2, "0");
+        counter.textContent = n1 + " / " + n2;
+        bar.style.width = ((i + 1) / slides.length) * 100 + "%";
+        history.replaceState(null, "", "#" + (i + 1));
+      }
+
+      document.getElementById("prev").onclick = () => show(i - 1);
+      document.getElementById("next").onclick = () => show(i + 1);
+      document.addEventListener("keydown", (e) => {
+        if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) {
+          e.preventDefault();
+          show(i + 1);
+        } else if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) {
+          e.preventDefault();
+          show(i - 1);
+        } else if (e.key === "Home") show(0);
+        else if (e.key === "End") show(slides.length - 1);
+      });
+
+      const hash = Number(location.hash.replace("#", ""));
+      show(Number.isFinite(hash) && hash >= 1 ? hash - 1 : 0);
+    </script>
+  </body>
+</html>
