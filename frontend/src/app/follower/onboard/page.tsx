@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { parseUnits } from "viem";
@@ -139,9 +140,9 @@ function FollowerOnboardForm() {
         {step === "idle" ? "Follow this lead" : `Working: ${step}…`}
       </button>
       <p className="muted" style={{ marginTop: "1rem" }}>
-        Prefer the list? <a href="/#discover">Open Discover</a>
+        Prefer the list? <Link href="/#discover">Open Discover</Link>
         {" · "}
-        XRPL path: <a href="/follower/xrpl">Smart Account onboarding</a>
+        XRPL path: <Link href="/follower/xrpl">Smart Account onboarding</Link>
       </p>
       {msg && <p className={msg.startsWith("Follower") ? "ok" : "err"}>{msg}</p>}
       {error && <p className="err">{error.message}</p>}

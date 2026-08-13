@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { config, RISK_LABELS } from "@/lib/config";
 
@@ -191,10 +192,11 @@ export default function XrplOnboardPage() {
         <h2 style={{ fontSize: "1.2rem" }}>Sign</h2>
         <p className="muted">Scan the QR in Xaman (testnet) or paste the CLI JSON into an xrpl Payment.</p>
         <p>
-          <img
+          <Image
             alt="Xaman payment QR"
             width={220}
             height={220}
+            unoptimized
             style={{ background: "#fff", padding: 8, border: "1px solid var(--line)" }}
             src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(xamanLink)}`}
           />
