@@ -244,8 +244,12 @@ export async function handleMirrorMatchStageB(msg: string): Promise<HandlerResul
 
   // --- 3) Read FTSO feed prices ----------------------------------------
   // NOTE: This runs inside the TEE; it must NOT print decrypted fields.
-  const rpcUrl = process.env.FLARE_RPC_URL;
-  if (!rpcUrl) return [null, 0, "missing FLARE_RPC_URL"];
+  // FCC allow_env_override does not include FLARE_RPC_URL; CHAIN_URL may only
+  // reach tee-node, not this Node process. Default to public Coston2 RPC.
+  const rpcUrl =
+    process.env.FLARE_RPC_URL ||
+    process.env.CHAIN_URL ||
+    "https://coston2-api.flare.network/ext/C/rpc";
 
   const { createPublicClient, http, getAddress, encodeFunctionData } = await import("viem");
   const client = createPublicClient({ chain: { id: 114 } as any, transport: http(rpcUrl) });
@@ -352,24 +356,112 @@ export async function handleMirrorMatchStageB(msg: string): Promise<HandlerResul
     })) as `0x${string}`;
   }
 
-  // --- 4) Position sizing (MVP hardcap) -------------------------------
-  // We model sizePct as bps out of 10_000 of a fixed notional cap.
-  const sizePctBps = BigInt(Math.trunc(sizePct));
-  const notionalCapWei = 1_000_000n * 10n ** 18n;
-  const baseNotionalWei = (notionalCapWei * sizePctBps) / 10_000n;
-  if (baseNotionalWei === 0n) return [null, 0, "sizing produced zero notional"];
+  // --- 4) Position sizing ----------------------------------------------
+  // UI sends 1–100 as percent; canaries may send bps (>100). FXRP/USDT0 are 6 dp.
+  const sizePctBps = BigInt(sizePct <= 100 ? Math.trunc(sizePct * 100) : Math.trunc(sizePct));
+  const tokenDecimals = 6n;
+  const notionalCap = 1_000_000n * 10n ** tokenDecimals;
+  const capNotional = (notionalCap * sizePctBps) / 10_000n;
 
-  const followersList: FollowerAlloc[] =
+  const leadAddr =
+    typeof parsed.lead === "string" && parsed.lead.startsWith("0x") && parsed.lead.length === 42
+      ? getAddress(parsed.lead as `0x${string}`)
+      : null;
+
+  const vaultAddr =
+    process.env.MIRROR_VAULT_ADDRESS || "0x283aA87660cB02D1ffcEDd028B401766C076BdB4";
+  const registryAddr =
+    process.env.MIRROR_REGISTRY_ADDRESS || "0xfF4f9a603ebd126Db2BEc88A88a0fae6B2fB8065";
+  let followersList: FollowerAlloc[] =
     followersRaw && followersRaw.length > 0
       ? followersRaw
       : [{ address: recipient as string, allocationBps: 10_000 }];
+  const amountByFollower = new Map<string, bigint>();
 
-  const builds: Array<{ to: string; data: string; venue: string; fee: number; recipient: string; amountIn: string }> =
-    [];
+  if (vaultAddr && registryAddr && leadAddr) {
+    try {
+      const VAULT_ABI = [
+        {
+          name: "getBalance",
+          type: "function",
+          stateMutability: "view",
+          inputs: [
+            { name: "follower", type: "address" },
+            { name: "lead", type: "address" },
+          ],
+          outputs: [{ type: "uint256" }],
+        },
+        {
+          name: "getPendingLocked",
+          type: "function",
+          stateMutability: "view",
+          inputs: [
+            { name: "follower", type: "address" },
+            { name: "lead", type: "address" },
+          ],
+          outputs: [{ type: "uint256" }],
+        },
+      ] as const;
+      const REG_ABI = [
+        {
+          name: "getFollowers",
+          type: "function",
+          stateMutability: "view",
+          inputs: [{ name: "lead", type: "address" }],
+          outputs: [{ type: "address[]" }],
+        },
+      ] as const;
+      const onchainFollowers = (await client.readContract({
+        address: getAddress(registryAddr as `0x${string}`),
+        abi: REG_ABI,
+        functionName: "getFollowers",
+        args: [leadAddr],
+      })) as `0x${string}`[];
+      const targets =
+        onchainFollowers.length > 0 ? onchainFollowers : followersList.map((f) => getAddress(f.address as `0x${string}`));
+      const sized: FollowerAlloc[] = [];
+      for (const addr of targets) {
+        const bal = (await client.readContract({
+          address: getAddress(vaultAddr as `0x${string}`),
+          abi: VAULT_ABI,
+          functionName: "getBalance",
+          args: [addr, leadAddr],
+        })) as bigint;
+        const locked = (await client.readContract({
+          address: getAddress(vaultAddr as `0x${string}`),
+          abi: VAULT_ABI,
+          functionName: "getPendingLocked",
+          args: [addr, leadAddr],
+        })) as bigint;
+        const available = bal > locked ? bal - locked : 0n;
+        const amount = (available * sizePctBps) / 10_000n;
+        if (amount > 0n) {
+          sized.push({ address: addr, allocationBps: 10_000 });
+          amountByFollower.set(addr.toLowerCase(), amount);
+        }
+      }
+      if (sized.length > 0) followersList = sized;
+    } catch {
+      // Fall through to notional-cap sizing (local smoke / missing contracts).
+    }
+  }
+
+  const builds: Array<{
+    to: string;
+    data: string;
+    venue: string;
+    fee: number;
+    recipient: string;
+    amountIn: string;
+    lead?: string;
+    tokenIn?: string;
+    tokenOut?: string;
+  }> = [];
 
   for (const f of followersList) {
     const allocBps = BigInt(Math.trunc(f.allocationBps));
-    const notionalWei = (baseNotionalWei * allocBps) / 10_000n;
+    const vaultAmt = amountByFollower.get(f.address.toLowerCase());
+    const notionalWei = vaultAmt ?? (capNotional * allocBps) / 10_000n;
     if (notionalWei === 0n) continue;
 
     const tokenIn = direction === "BUY" ? usdt0Token : fxrpToken;
@@ -413,7 +505,7 @@ export async function handleMirrorMatchStageB(msg: string): Promise<HandlerResul
         args: [notionalWei, amountOutMinimum, [tokenIn, tokenOut], recipientAddr, deadline],
       });
     } else {
-      const router = process.env.MOCK_SPARKDEX_ROUTER_ADDRESS || "";
+      const router = process.env.MOCK_SPARKDEX_ROUTER_ADDRESS || "0x6F3A431c74Ef7Ff30ed93569D4e8A43466E7F9e1";
       if (!router) return [null, 0, "missing MOCK_SPARKDEX_ROUTER_ADDRESS"];
       to = getAddress(router as `0x${string}`);
       const exactInputSingleAbi = [
@@ -465,6 +557,9 @@ export async function handleMirrorMatchStageB(msg: string): Promise<HandlerResul
       fee: venue === "blazeswap-v2" ? 0 : 500,
       recipient: recipientAddr,
       amountIn: notionalWei.toString(),
+      lead: leadAddr ?? undefined,
+      tokenIn,
+      tokenOut,
     });
   }
 
@@ -472,16 +567,23 @@ export async function handleMirrorMatchStageB(msg: string): Promise<HandlerResul
 
   const payload =
     builds.length === 1
-      ? { to: builds[0]!.to, data: builds[0]!.data, venue: builds[0]!.venue, fee: builds[0]!.fee }
+      ? {
+          to: builds[0]!.to,
+          data: builds[0]!.data,
+          venue: builds[0]!.venue,
+          fee: builds[0]!.fee,
+          recipient: builds[0]!.recipient,
+          amountIn: builds[0]!.amountIn,
+          lead: builds[0]!.lead,
+          tokenIn: builds[0]!.tokenIn,
+          tokenOut: builds[0]!.tokenOut,
+        }
       : { fanOut: true, instructions: builds, venue: builds[0]!.venue };
 
   // Private outcome stub for AI agent (no signal plaintext beyond sizing aggregates).
-  const leadAddr =
-    typeof parsed.lead === "string" && parsed.lead.startsWith("0x")
-      ? parsed.lead
-      : builds[0]!.recipient;
+  const outcomeLead = leadAddr ?? builds[0]!.recipient;
   appendOutcome({
-    lead: leadAddr,
+    lead: outcomeLead,
     timestamp: Math.floor(Date.now() / 1000),
     pnlBps: 0,
     direction: direction as "BUY" | "SELL",

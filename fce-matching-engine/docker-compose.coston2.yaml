@@ -12,6 +12,14 @@ services:
       # match the proxy's chain_id (114) and the on-chain registry, or signature
       # verification fails (InvalidTeePublicKeyOrSignature / proxy panic).
       - CHAIN_ID=${CHAIN_ID:-114}
+      # Matching-engine Stage B (injected by Docker, not Confidential Space).
+      - FLARE_RPC_URL=${FLARE_RPC_URL:-https://coston2-api.flare.network/ext/C/rpc}
+      - MOCK_SPARKDEX_ROUTER_ADDRESS=${MOCK_SPARKDEX_ROUTER_ADDRESS:-0x6F3A431c74Ef7Ff30ed93569D4e8A43466E7F9e1}
+      - MIRROR_VAULT_ADDRESS=${MIRROR_VAULT_ADDRESS:-0x283aA87660cB02D1ffcEDd028B401766C076BdB4}
+      - MIRROR_REGISTRY_ADDRESS=${MIRROR_REGISTRY_ADDRESS:-0xfF4f9a603ebd126Db2BEc88A88a0fae6B2fB8065}
+      - C2_FXRP_ADDRESS=${C2_FXRP_ADDRESS:-0x0b6A3645c240605887a5532109323A3E12273dc7}
+      - C2_USDT0_ADDRESS=${C2_USDT0_ADDRESS:-0xC1A5B41512496B80903D1f32d6dEa3a73212E71F}
+      - EXECUTION_VENUE=${EXECUTION_VENUE:-mock-sparkdex}
 
 networks:
   default:
