@@ -188,7 +188,7 @@ export default function PortfolioPage() {
       {err && <p className="err">{err}</p>}
       {isConnected && positions.length === 0 && !err && (
         <p className="muted">
-          No followed leads yet. <Link href="/">Discover leads</Link>
+          No followed leads yet. <Link href="/discover">Discover leads</Link>
         </p>
       )}
       {positions.length > 0 && (

@@ -38,7 +38,9 @@ test.describe("Mirror Coston2 UI", () => {
   test("landing shows Mirror brand and discovery", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator(".hero-brand")).toHaveText("Mirror");
-    await expect(page.getByRole("heading", { name: /Copy leads/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Private copy trading/i })).toBeVisible();
+    await expect(page.locator("#discover")).toHaveCount(0);
+    await page.goto("/discover");
     await expect(page.locator("#discover h2")).toHaveText("Discovery");
   });
 

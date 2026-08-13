@@ -140,7 +140,7 @@ function FollowerOnboardForm() {
         {step === "idle" ? "Follow this lead" : `Working: ${step}…`}
       </button>
       <p className="muted" style={{ marginTop: "1rem" }}>
-        Prefer the list? <Link href="/#discover">Open Discover</Link>
+        Prefer the list? <Link href="/discover">Open Discover</Link>
         {" · "}
         XRPL path: <Link href="/follower/xrpl">Smart Account onboarding</Link>
       </p>

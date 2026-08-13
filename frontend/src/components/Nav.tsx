@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 const links = [
-  { href: "/", label: "Discover" },
+  { href: "/discover", label: "Discover" },
   { href: "/lead/onboard", label: "Lead" },
   { href: "/follower/onboard", label: "Follow" },
   { href: "/follower/xrpl", label: "XRPL" },

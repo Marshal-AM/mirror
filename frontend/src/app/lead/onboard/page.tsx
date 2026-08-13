@@ -84,7 +84,7 @@ export default function LeadOnboardPage() {
       {isSuccess && (
         <p className="ok">
           Registered. Wallet: {address}. Followers can pick you on{" "}
-          <Link href="/#discover">Discover</Link>.
+          <Link href="/discover">Discover</Link>.
         </p>
       )}
       {scoreMsg && <p className={scoreMsg.includes("failed") ? "err" : "ok"}>{scoreMsg}</p>}

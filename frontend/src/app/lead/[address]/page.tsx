@@ -192,7 +192,7 @@ export default function LeadProfilePage() {
         {busy ? `Working: ${step}…` : alreadyFollowing ? "Deposit more" : "Follow"}
       </button>
       <p>
-        <Link href="/#discover">Back to Discover</Link>
+        <Link href="/discover">Back to Discover</Link>
         {" · "}
         <Link href="/portfolio">Portfolio</Link>
       </p>
