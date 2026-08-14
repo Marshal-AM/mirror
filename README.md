@@ -4,6 +4,8 @@ Private copy trading on Flare, powered by Flare Confidential Compute.
 
 A lead encrypts a signal in the browser. A TEE decrypts it, sizes every follower from live FTSO prices and vault balances, and settles the fill on public contracts — without ever putting the strategy in the mempool. The chain sees ciphertext on the way in, a venue swap in the middle, and an FDC proof on the way out. Followers copy skilled flow into FXRP vaults. Searchers get noise.
 
+#### NOTE: The ENTIRE project was built during the hackathon period!
+
 ---
 
 ## Important links
