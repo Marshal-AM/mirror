@@ -10,7 +10,7 @@ npm install
 npm run dev -w frontend
 ```
 
-Production (Vercel): see [docs/VERCEL.md](../docs/VERCEL.md). Root Directory must be `frontend`.
+Production (Vercel): set Root Directory to `frontend`.
 
 Addresses default from `config/coston2.json` via `NEXT_PUBLIC_MIRROR_*`.
 

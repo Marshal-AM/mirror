@@ -45,6 +45,9 @@ config/*.local.json
 # Fill-worker lead outcome history (PnL / SCORE_V1)
 scripts/.outcomes/
 
+# Project docs kept local-only (not published to GitHub)
+/docs/
+
 # Logs
 *.log
 npm-debug.log*
