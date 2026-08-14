@@ -1264,7 +1264,7 @@ flowchart LR
 | Make it production-ready | Then the business side |
 |---|---|
 | Audit Registry, Vault, Fee, Sender, FSA onboarder, and both FCE code hashes | Deploy to Flare mainnet (chain 14) with the live SparkDEX V3 router |
-| Finish TEE-resident PMW signing so the executor key is not a human EOA | Seed a small set of verified leads — scores stay 0 until real fills |
+| Finish TEE-resident PMW signing so the executor key is not a human EOA which was done for demo | Seed a small set of verified leads — scores stay 0 until real fills |
 | Fill-worker uses TEE-sized amounts instead of re-deriving size | GTM through Xaman / XRPL: follow from XRP, never buy FLR first |
 | Route the 10% protocol cut into FIRE / FIP.16 | Liquidity partnerships so FXRP/USDT0 can absorb copy waves |
 | Swap mock SparkDEX / Kinetic / Enosys for live venue addresses | Lead acquisition via performance fees, not token incentives |
