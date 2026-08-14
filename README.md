@@ -13,7 +13,8 @@ A lead encrypts a signal in the browser. A TEE decrypts it, sizes every follower
 | Resource | URL |
 |---|---|
 | Live App | https://mirror-iota-gilt.vercel.app |
-| Demo video | |
+| Demo video | https://youtu.be/7ouozyj07Qk |
+| Pitch Deck | https://mirror-pitch.pages.dev |
 
 ---
 
